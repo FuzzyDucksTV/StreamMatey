@@ -37,8 +37,13 @@ function analyzeSentiment(message) {
 
 // Function to analyze a chat message for toxicity
 async function analyzeToxicity(message) {
-  const result = await client.analyze({ comment: { text: message } });
-  return result.attributeScores.TOXICITY.summaryScore.value;
+  try {
+    const result = await client.analyze({ comment: { text: message } });
+    return result.attributeScores.TOXICITY.summaryScore.value;
+  } catch (error) {
+    console.error('Error with Perspective API, falling back to sentiment.js', error);
+    return analyzeSentiment(message);
+  }
 }
 
 // Function to handle incoming messages
