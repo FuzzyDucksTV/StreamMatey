@@ -58,23 +58,28 @@ async function handleMessage(request, sender, sendResponse) {
   return true; // Indicate that the response will be sent asynchronously
 }
 
-// Function to load the user's preferences
 function loadPreferences() {
-  chrome.storage.sync.get('preferences', (data) => {
-    if (chrome.runtime.lastError) {
-      console.error('Error loading preferences:', chrome.runtime.lastError);
-      return;
-    }
-
-    const preferences = data.preferences;
-    if (preferences) {
-      enableSentimentAnalysis = preferences.sentiment.enabled;
-      enableToxicityDetection = preferences.toxicity.enabled;
-      sentimentOptions = preferences.sentiment.options;
-      toxicityOptions = preferences.toxicity.options;
-    }
-  });
-}
+    chrome.storage.sync.get('preferences', (data) => {
+      if (chrome.runtime.lastError) {
+        console.error('Error loading preferences:', chrome.runtime.lastError);
+        return;
+      }
+  
+      const preferences = data.preferences;
+  
+      if (preferences) {
+        enableSentimentAnalysis = preferences.sentiment.enabled;
+        enableToxicityDetection = preferences.toxicity.enabled;
+        sentimentOptions = preferences.sentiment.options;
+        toxicityOptions = preferences.toxicity.options;
+        customModMessage = preferences.customModMessage;
+        toxicUserWarning = preferences.toxicUserWarning;
+        extUserWarning = preferences.extUserWarning;
+        sensitivitySettings = preferences.sensitivitySettings;
+      }
+    });
+  }
+  
 
 // Listen for messages from the content script and options page
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
