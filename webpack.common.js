@@ -1,18 +1,18 @@
 const path = require('path');
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const CopyWebpackPlugin = require('copy-webpack-plugin');
 const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
   entry: {
-    background: path.join(__dirname, 'src', 'background.js'),
-    options: path.join(__dirname, 'src', 'options.js'),
-    twitchChatHandler: path.join(__dirname, 'src', 'twitchChatHandler.js'),
-    contentScript: path.join(__dirname, 'src', 'contentScript.js'),
-    netlifyFunctions: path.join(__dirname, 'src', 'netlifyFunctions.js')
+    background: './src/background.js',
+    options: './src/options.js',
+    twitchChatHandler: './src/twitchChatHandler.js',
+    contentScript: './src/contentScript.js',
+    netlifyFunctions: './src/netlifyFunctions.js'
   },
   output: {
-    path: path.join(__dirname, 'dist'),
+    path: path.resolve(__dirname, 'dist'),
     filename: '[name].js'
   },
   module: {
@@ -30,17 +30,6 @@ module.exports = {
       {
         test: /\.css$/,
         use: [MiniCssExtractPlugin.loader, 'css-loader']
-      },
-      {
-        test: /\.(png|jpe?g|gif|svg)$/,
-        use: [
-          {
-            loader: 'file-loader',
-            options: {
-              outputPath: 'icons'
-            }
-          }
-        ]
       }
     ]
   },
@@ -48,12 +37,16 @@ module.exports = {
     new CleanWebpackPlugin(),
     new CopyWebpackPlugin({
       patterns: [
-        { from: 'src/manifest.json', to: 'manifest.json' },
-        { from: 'src/icons', to: 'icons' },
-      ]
+        { from: './src/manifest.json', to: 'manifest.json' },
+        { from: './src/options.html', to: 'options.html' },
+        { from: './src/sentiment.html', to: 'sentiment.html' },
+        { from: './src/dark.css', to: 'dark.css' },
+        { from: './src/light.css', to: 'light.css' },
+        { from: './src/icons', to: 'icons' },
+      ],
     }),
     new MiniCssExtractPlugin({
       filename: '[name].css'
-    })
+    }),
   ]
 };

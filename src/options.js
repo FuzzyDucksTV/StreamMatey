@@ -3,7 +3,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
         sentiment: {
             toggle: document.getElementById('sentimentToggle'),
             sensitivity: document.getElementById('sentimentSensitivity'),
-            sensitivityValue: document.getElementById('sentimentSensitivityValue'),
             showTopScorers: document.getElementById('showTopScorers'),
             showBottomScorers: document.getElementById('showBottomScorers'),
             leaderboardDuration: document.getElementById('leaderboardDuration')
@@ -57,7 +56,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
                         input.checked = preferences[feature].options[option];
                     } else if (input.type === 'range') {
                         input.value = preferences[feature].options[option];
-                        features[feature].sensitivityValue.textContent = input.value;
                     } else {
                         input.value = preferences[feature].options[option];
                     }
@@ -111,16 +109,12 @@ document.addEventListener('DOMContentLoaded', (event) => {
     loginButton.addEventListener('click', () => {
         chrome.runtime.sendMessage({type: 'initiateOAuth'});
     });
-
     for (let feature in features) {
         features[feature].toggle.addEventListener('change', savePreferences);
         for (let option in features[feature]) {
             if (option !== 'toggle') {
                 let input = features[feature][option];
                 input.addEventListener('input', () => {
-                    if (input.type === 'range') {
-                        features[feature].sensitivityValue.textContent = input.value;
-                    }
                     savePreferences();
                 });
             }
