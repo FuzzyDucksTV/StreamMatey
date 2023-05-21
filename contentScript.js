@@ -31,9 +31,16 @@ async function fetchChatMessages(channel) {
 
 // Function to analyze a chat message for sentiment
 function analyzeSentiment(message) {
-  const result = sentiment.analyze(message);
-  return result.comparative;
+  try {
+    const result = sentiment.analyze(message);
+    return result.comparative;
+  } catch (error) {
+    console.error('Error analyzing sentiment:', error);
+    // Fallback to Perspective API if sentiment.js fails
+    return analyzeToxicity(message);
+  }
 }
+
 
 // Function to analyze a chat message for toxicity
 async function analyzeToxicity(message) {
@@ -41,10 +48,12 @@ async function analyzeToxicity(message) {
     const result = await client.analyze({ comment: { text: message } });
     return result.attributeScores.TOXICITY.summaryScore.value;
   } catch (error) {
-    console.error('Error with Perspective API, falling back to sentiment.js', error);
+    console.error('Error analyzing toxicity:', error);
+    // Fallback to sentiment.js if Perspective API fails
     return analyzeSentiment(message);
   }
 }
+
 
 // Function to handle incoming messages
 async function handleMessage(request, sender, sendResponse) {
