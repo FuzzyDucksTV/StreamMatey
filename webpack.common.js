@@ -1,22 +1,9 @@
-// webpack.prod.js
-const { merge } = require('webpack-merge');
-const common = require('./webpack.common.js');
-
-module.exports = merge(common, {
-  mode: 'production'
-});
-// webpack.dev.js
-const { merge } = require('webpack-merge');
-const common = require('./webpack.common.js');
-
-module.exports = merge(common, {
-  mode: 'development'
-});
 // webpack.common.js
 const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
-
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
+const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 module.exports = {
   entry: {
@@ -43,7 +30,6 @@ module.exports = {
         }
       },
       {
-
         test: /\.html$/i,
         loader: 'html-loader',
         options: {
@@ -68,50 +54,38 @@ module.exports = {
         use: [MiniCssExtractPlugin.loader, 'css-loader']
       },
       {
-        // Apply rule for images
         test: /\.(png|jpe?g|gif|svg)$/,
         use: [
           {
-            // Using file-loader for these files
-            loader: 'file-loader',  
-            // In options we can set different things like format
-            // and directory to save
+            loader: 'file-loader',
             options: {
-              outputPath: 'build\icons'
+              outputPath: 'icons'
             }
-        }
-      ]
-  }],
+          }
+        ]
+      }
+    ]
+  },
   plugins: [
     new CleanWebpackPlugin(),
     new CopyWebpackPlugin({
       patterns: [
-        { from: 'src\manifest.json', to: 'build/manifest.json' },
-        { from: 'src\options.js', to: 'build/options.js' },
-        { from: 'src\icons', to: 'build\icons' },
-        { from: 'src\icon.png', to: 'build/icon.png' },
+        { from: 'manifest.json', to: 'manifest.json' },
+        { from: 'icons', to: 'icons' },
       ]
     }),
     new MiniCssExtractPlugin({
       filename: '[name].css'
     }),
     new HtmlWebpackPlugin({
-      template: './src/options.html',
+      template: './options.html',
       filename: 'options.html',
       chunks: ['options']
     }),
     new HtmlWebpackPlugin({
-      template: './src/sentiment.html',
+      template: './sentiment.html',
       filename: 'sentiment.html',
       chunks: ['sentiment']
     })
   ]
-},
-  devServer: {
-    contentBase: path.join(__dirname, 'dist'),
-    port: 9000
-  }
 };
-
-
-              
