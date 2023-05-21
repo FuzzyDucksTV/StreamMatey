@@ -1,14 +1,15 @@
 // webpack.common.js
 const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+
 
 module.exports = {
   entry: {
     background: path.join(__dirname, 'background.js'),
     options: path.join(__dirname, 'options.js'),
     twitchChatHandler: path.join(__dirname, 'twitchChatHandler.js'),
-    sentimentAnalysis: path.join(__dirname, 'sentimentAnalysis.js'),
-    toxicityDetection: path.join(__dirname, 'toxicityDetection.js'),
+    contentScript: path.join(__dirname, 'contentScript.js'),
     netlifyFunctions: path.join(__dirname, 'netlifyFunctions.js')
   },
   output: {
@@ -27,15 +28,56 @@ module.exports = {
           }
         }
       },
+      { 
+
+        test: /\.html$/i,
+        loader: 'html-loader',
+        options: {
+          attributes: {
+            list: [
+              {
+                tag: 'img',
+                attribute: 'src',
+                type: 'src',
+              },
+              {
+                tag: 'link',
+                attribute: 'href',
+                type: 'src',
+              },
+            ],
+          },
+        },
+      },
       {
         test: /\.css$/,
         use: [MiniCssExtractPlugin.loader, 'css-loader']
-      }
-    ]
+      },
+      {
+        // Apply rule for images
+        test: /\.(png|jpe?g|gif|svg)$/,
+        use: [
+          {
+            // Using file-loader for these files
+            loader: 'file-loader',
+
+            // In options we can set different things like format
+            // and directory to save
+            options: {
+              outputPath: 'images'
+            
+            }
+        }
+      ] 
   },
   plugins: [
+    new CopyWebpackPlugin({
+      patterns: [
+        { from:  'manifest.json' },
+      ],
+    }),
     new MiniCssExtractPlugin({
       filename: '[name].css'
-    })
+    }),
   ]
 };
