@@ -37,19 +37,9 @@
       "use_dynamic_url": false
     },
     {
-      "resources": ["icons/icon16.png"],
+      "resources": ["icons/icon16.png", "icons/icon48.png", "icons/icon128.png"],
       "matches": ["<all_urls>", "https://api.netlify.com/*"],
       "use_dynamic_url": false
-    },
-    {
-      "resources": ["icons/icon48.png"],
-      "matches": ["<all_urls>", "https://api.netlify.com/*"],
-      "use_dynamic_url": false
-    },
-    {
-      "resources": ["icons/icon128.png"],
-      "matches": ["<all_urls>", "https://api.netlify.com/*"],
-      "use_dynamic_url":       false
     }
   ],
   "icons": {
@@ -70,4 +60,3 @@
     "open_in_tab": true
   }
 }
-

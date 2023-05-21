@@ -3,6 +3,7 @@ const toxicityWindow = document.getElementById('toxicity-window');
 const toxicityMeterBar = document.getElementById('toxicity-meter-bar');
 const toxicityScoreElement = document.getElementById('toxicity-score');
 
+// Check if required HTML elements are present
 if (!toxicityWindow || !toxicityMeterBar || !toxicityScoreElement) {
     console.error('Unable to locate required HTML elements');
     return;
@@ -33,17 +34,21 @@ function handleReceivedMessage(message) {
 }
 
 // Listener for messages from the background script
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-    handleReceivedMessage(message);
-});
+if (chrome && chrome.runtime && chrome.runtime.onMessage) {
+    chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+        handleReceivedMessage(message);
+    });
+} else {
+    console.error('Unable to set up message listener');
+}
 
 // Function to send a message to the background script
 function sendMessage(message) {
-    if (!chrome || !chrome.runtime || !chrome.runtime.sendMessage) {
+    if (chrome && chrome.runtime && chrome.runtime.sendMessage) {
+        chrome.runtime.sendMessage(message);
+    } else {
         console.error('Unable to send message to background script');
-        return;
     }
-    chrome.runtime.sendMessage(message);
 }
 
 // Function to score a message
