@@ -1,3 +1,17 @@
+// webpack.prod.js
+const { merge } = require('webpack-merge');
+const common = require('./webpack.common.js');
+
+module.exports = merge(common, {
+  mode: 'production'
+});
+// webpack.dev.js
+const { merge } = require('webpack-merge');
+const common = require('./webpack.common.js');
+
+module.exports = merge(common, {
+  mode: 'development'
+});
 // webpack.common.js
 const path = require('path');
 const MiniCssExtractPlugin = require('mini-css-extract-plugin');
@@ -28,7 +42,7 @@ module.exports = {
           }
         }
       },
-      { 
+      {
 
         test: /\.html$/i,
         loader: 'html-loader',
@@ -59,32 +73,45 @@ module.exports = {
         use: [
           {
             // Using file-loader for these files
-            loader: 'file-loader',
-
+            loader: 'file-loader',  
             // In options we can set different things like format
             // and directory to save
             options: {
-              outputPath: 'images'
-            
+              outputPath: 'build\icons'
             }
         }
-      ] 
-  },
+      ]
+  }],
   plugins: [
     new CleanWebpackPlugin(),
     new CopyWebpackPlugin({
       patterns: [
-          
-        { from: 'manifest.json', to: 'build/manifest.json' },
-        { from: 'options.html', to: 'build/options.html' },
-        { from: 'sentiment.html', to: 'build/sentiment.html' },
-        { from: 'toxicity.html', to: 'build/toxicity.html' },
-        { from: 'netlifyFunctions.js', to: 'build/netlifyFunctions.js' },
-
-      ],
+        { from: 'src\manifest.json', to: 'build/manifest.json' },
+        { from: 'src\options.js', to: 'build/options.js' },
+        { from: 'src\icons', to: 'build\icons' },
+        { from: 'src\icon.png', to: 'build/icon.png' },
+      ]
     }),
     new MiniCssExtractPlugin({
       filename: '[name].css'
     }),
+    new HtmlWebpackPlugin({
+      template: './src/options.html',
+      filename: 'options.html',
+      chunks: ['options']
+    }),
+    new HtmlWebpackPlugin({
+      template: './src/sentiment.html',
+      filename: 'sentiment.html',
+      chunks: ['sentiment']
+    })
   ]
+},
+  devServer: {
+    contentBase: path.join(__dirname, 'dist'),
+    port: 9000
+  }
 };
+
+
+              
