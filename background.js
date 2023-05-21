@@ -25,9 +25,9 @@ async function fetchAPIKeys() {
     return response.data;
   } catch (error) {
     console.error('Error fetching API keys from Netlify:', error);
-    throw error;
+    // Handle the error appropriately, e.g. by sending a message to the mods or the extension user
+    sendWarningToExtUser('Error fetching API keys from Netlify: ' + error.message);
   }
-  
 }
 
 // Function to get the current Twitch channel
@@ -46,10 +46,10 @@ async function getCurrentChannel(token, clientId) {
     return data.data[0].login;
   } catch (error) {
     console.error('Error getting current Twitch channel:', error);
-    throw error;
-  }  
+    // Handle the error appropriately, e.g. by sending a message to the mods or the extension user
+    sendWarningToExtUser('Error getting current Twitch channel: ' + error.message);
+  }
 }
-
 // Function to handle Twitch chat messages
 async function handleChatMessage(channel, userstate, message, self) {
   // Ignore messages from the bot itself
@@ -183,22 +183,20 @@ async function monitorTwitchChat() {
 
     // Connect to Twitch
     try {
-      client.connect().catch(error => {
-        console.error('Error connecting to Twitch:', error);
-        // Handle the error appropriately, e.g. by sending a message to the mods or the extension user
-      });
+      await client.connect();
     } catch (error) {
-      console.error('Error setting up Twitch chat monitoring:', error);
+      console.error('Error connecting to Twitch:', error);
       // Handle the error appropriately, e.g. by sending a message to the mods or the extension user
+      sendWarningToExtUser('Error connecting to Twitch: ' + error.message);
     }
 
     // Listen for chat messages
     client.on('message', handleChatMessage);
   } catch (error) {
     console.error('Error setting up Twitch chat monitoring:', error);
-    displayError('Error setting up Twitch chat monitoring: ' + error.message);
+    // Handle the error appropriately, e.g. by sending a message to the mods or the extension user
+    sendWarningToExtUser('Error setting up Twitch chat monitoring: ' + error.message);
   }
-  
 }
 
 // Monitor Twitch chat when the script is loaded
