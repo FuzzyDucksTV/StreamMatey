@@ -14,6 +14,10 @@ const client = new perspective.ApiClient(perspectiveAPIKey);
 let enableSentimentAnalysis = true;
 let enableToxicityDetection = true;
 
+// Additional options
+let sentimentOptions = {};
+let toxicityOptions = {};
+
 // Function to fetch chat messages from Twitch
 async function fetchChatMessages(channel) {
   const response = await axios.get(`https://api.twitch.tv/kraken/channels/${channel}/chat`, {
@@ -66,6 +70,8 @@ function loadPreferences() {
     if (preferences) {
       enableSentimentAnalysis = preferences.sentiment.enabled;
       enableToxicityDetection = preferences.toxicity.enabled;
+      sentimentOptions = preferences.sentiment.options;
+      toxicityOptions = preferences.toxicity.options;
     }
   });
 }
