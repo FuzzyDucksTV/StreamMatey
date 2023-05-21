@@ -19,11 +19,15 @@ async function fetchAPIKeys() {
         'Authorization': `Bearer ${netlifyAPIKey}`
       }
     });
+    if (response.status !== 200) {
+      throw new Error(`Error fetching API keys from Netlify: HTTP ${response.status}`);
+    }
     return response.data;
   } catch (error) {
     console.error('Error fetching API keys from Netlify:', error);
     throw error;
   }
+  
 }
 
 // Function to get the current Twitch channel
@@ -35,12 +39,15 @@ async function getCurrentChannel(token, clientId) {
         'Client-Id': clientId
       }
     });
+    if (response.status !== 200) {
+      throw new Error(`Error getting current Twitch channel: HTTP ${response.status}`);
+    }
     const data = await response.json();
     return data.data[0].login;
   } catch (error) {
     console.error('Error getting current Twitch channel:', error);
     throw error;
-  }
+  }  
 }
 
 // Function to handle Twitch chat messages
@@ -52,16 +59,18 @@ async function handleChatMessage(channel, userstate, message, self) {
   let sentimentScore = null;
   let toxicityScore = null;
 
-  // Check the user's preferences and handle the message accordingly
-  if (enableSentimentAnalysis) {
-    // Analyze the message for sentiment
-    sentimentScore = analyzeSentiment(message);
+  try {
+    if (enableSentimentAnalysis) {
+      sentimentScore = analyzeSentiment(message);
+    }
+    if (enableToxicityDetection) {
+      toxicityScore = await analyzeToxicity(message);
+    }
+  } catch (error) {
+    console.error('Error analyzing message:', error);
+    // Handle the error appropriately, e.g. by sending a message to the mods or the extension user
   }
-
-  if (enableToxicityDetection) {
-    // Analyze the message for toxicity
-    toxicityScore = await analyzeToxicity(message);
-  }
+  
 
   // Handle the message based on the sentiment and toxicity scores
   if (sentimentScore !== null && toxicityScore !== null) {
@@ -118,6 +127,7 @@ async function handleChatMessage(channel, userstate, message, self) {
   }
 
   // If neither sentiment analysis nor toxicity detection are enabled, just display the message as is
+  
 }
 
 // Function to send a warning to a user
@@ -172,10 +182,15 @@ async function monitorTwitchChat() {
     });
 
     // Connect to Twitch
-    client.connect().catch(error => {
-      console.error('Error connecting to Twitch:', error);
-      displayError('Error connecting to Twitch: ' + error.message);
-    });
+    try {
+      client.connect().catch(error => {
+        console.error('Error connecting to Twitch:', error);
+        // Handle the error appropriately, e.g. by sending a message to the mods or the extension user
+      });
+    } catch (error) {
+      console.error('Error setting up Twitch chat monitoring:', error);
+      // Handle the error appropriately, e.g. by sending a message to the mods or the extension user
+    }
 
     // Listen for chat messages
     client.on('message', handleChatMessage);
@@ -183,6 +198,7 @@ async function monitorTwitchChat() {
     console.error('Error setting up Twitch chat monitoring:', error);
     displayError('Error setting up Twitch chat monitoring: ' + error.message);
   }
+  
 }
 
 // Monitor Twitch chat when the script is loaded
