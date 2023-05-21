@@ -74,13 +74,13 @@ module.exports = {
     new CleanWebpackPlugin(),
     new CopyWebpackPlugin({
       patterns: [
-        { from: 'icons', to: 'build/icons' }, // example of copying directory
+          
         { from: 'manifest.json', to: 'build/manifest.json' },
         { from: 'options.html', to: 'build/options.html' },
         { from: 'sentiment.html', to: 'build/sentiment.html' },
         { from: 'toxicity.html', to: 'build/toxicity.html' },
         { from: 'netlifyFunctions.js', to: 'build/netlifyFunctions.js' },
-        
+
       ],
     }),
     new MiniCssExtractPlugin({
