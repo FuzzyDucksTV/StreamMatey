@@ -115,41 +115,42 @@ document.addEventListener('DOMContentLoaded', (event) => {
     for (let feature in features) {
         features[feature].toggle.addEventListener('change', savePreferences);
         for (let option in features[feature]) {
-        if (option !== 'toggle') {
-            let input = features[feature][option];
-            input.addEventListener('input', () => {
-                if (input.type === 'range') {
-                    features[feature].sensitivityValue.textContent = input.value;
-                }
-                savePreferences();
-            });
+            if (option !== 'toggle') {
+                let input = features[feature][option];
+                input.addEventListener('input', () => {
+                    if (input.type === 'range') {
+                        features[feature].sensitivityValue.textContent = input.value;
+                    }
+                    savePreferences();
+                });
+            }
         }
     }
-}   
 
-chrome.storage.sync.get(['accessToken'], function(data) {
-    if (chrome.runtime.lastError) {
-        console.error('Error loading access token:', chrome.runtime.lastError);
-        displayError('Error loading access token: ' + chrome.runtime.lastError.message);
-        return;
-    }
+    chrome.storage.sync.get(['accessToken'], function(data) {
+        if (chrome.runtime.lastError) {
+            console.error('Error loading access token:', chrome.runtime.lastError);
+            displayError('Error loading access token: ' + chrome.runtime.lastError.message);
+            return;
+        }
 
-    if (data.accessToken) {
-        loginButton.style.display = 'none';
-        let logoutButton = document.createElement('button');
-        logoutButton.innerText = 'Logout';
-        document.getElementById('twitchAuth').appendChild(logoutButton);
+        if (data.accessToken) {
+            loginButton.style.display = 'none';
+            let logoutButton = document.createElement('button');
+            logoutButton.innerText = 'Logout';
+            document.getElementById('twitchAuth').appendChild(logoutButton);
 
-        logoutButton.addEventListener('click', () => {
-            chrome.storage.sync.remove('accessToken', function() {
-                if (chrome.runtime.lastError) {
-                    console.error('Error removing access token:', chrome.runtime.lastError);
-                    displayError('Error removing access token: ' + chrome.runtime.lastError.message);
-                } else {
-                    window.location.reload();
-                }
+            logoutButton.addEventListener('click', () => {
+                chrome.storage.sync.remove('accessToken', function() {
+                    if (chrome.runtime.lastError) {
+                        console.error('Error removing access token:', chrome.runtime.lastError);
+                        displayError('Error removing access token: ' + chrome.runtime.lastError.message);
+                    } else {
+                        loginButton.style.display = 'block';
+                        logoutButton.remove();
+                    }
+                });
             });
-        });
-    }
-});
+        }
+    });
 });
