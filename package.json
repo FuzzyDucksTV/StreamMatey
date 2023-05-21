@@ -1,0 +1,29 @@
+{
+  "name": "streammatey",
+  "version": "1.0.0",
+  "description": "StreamMatey is a Chrome extension that monitors Twitch chat in real-time, using sentiment analysis and toxicity detection to analyze chat messages.",
+  "main": "background.js",
+  "scripts": {
+    "start": "webpack serve --open --config webpack.dev.js",
+    "build": "webpack --config webpack.prod.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/core": "^7.21.8",
+    "@babel/preset-env": "^7.21.5",
+    "babel-loader": "^9.1.2",
+    "webpack": "^5.83.1",
+    "webpack-cli": "^5.1.1"
+  },
+  "dependencies": {
+    "axios": "^1.4.0",
+    "css-loader": "^6.7.4",
+    "mini-css-extract-plugin": "^2.7.6",
+    "perspective-api-client": "^3.1.0",
+    "tmi.js": "^1.8.5",
+    "webpack-dev-server": "^4.15.0",
+    "webpack-merge": "^5.8.0"
+  }
+}
