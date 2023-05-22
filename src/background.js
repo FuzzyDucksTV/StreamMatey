@@ -10,6 +10,13 @@ let googleClientId = 'YOUR_GOOGLE_CLIENT_ID';
 
 // Create a new instance of the Perspective API client
 const client = new perspective.ApiClient();
+chrome.action.onClicked.addListener(function() {
+  chrome.tabs.create({url: 'options.html'});
+});
+
+chrome.identity.getAuthToken({interactive: true}, function(token) {
+  // Use the token to access the Twitch and Perspective APIs
+});
 
 // Google OAuth2 client
 const oauth2Client = new google.auth.OAuth2(

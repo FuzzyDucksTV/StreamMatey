@@ -2,6 +2,10 @@
   "manifest_version": 3,
   "name": "StreamMatey",
   "version": "1.0",
+  "oauth2": {
+    "client_id": "887205281229-hbjptrj5tp55blkaehqfs6g35jg5p4ci.apps.googleusercontent.com",
+    "scopes": ["https://www.googleapis.com/auth/contacts.readonly"]
+  },
   "action": {
     "default_popup": "options.html",
     "default_icon": {
@@ -19,27 +23,14 @@
   ],
   "host_permissions": [
     "https://api.twitch.tv/*",
-    "https://api-inference.huggingface.co/*",
-    "https://api.netlify.com/*"
   ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"
   },
-  "web_accessible_resources": [
+  "content_scripts": [
     {
-      "resources": ["options.html", "options.js", "sentiment.html", "twitchChatHandler.js"],
-      "matches": ["<all_urls>"],
-      "use_dynamic_url": false
-    },
-    {
-      "resources": ["light.css", "sentiment.css", "dark.css"],
-      "matches": ["<all_urls>", "https://api.netlify.com/*"],
-      "use_dynamic_url": false
-    },
-    {
-      "resources": ["icons/icon16.png", "icons/icon48.png", "icons/icon128.png"],
-      "matches": ["<all_urls>", "https://api.netlify.com/*"],
-      "use_dynamic_url": false
+      "matches": ["https://www.twitch.tv/*"],
+      "js": ["contentScript.js"]
     }
   ],
   "icons": {
@@ -55,8 +46,5 @@
       }
     }
   },
-  "options_ui": {
-    "page": "options.html",
-    "open_in_tab": true
-  }
+  "options_page": "options.html"
 }
