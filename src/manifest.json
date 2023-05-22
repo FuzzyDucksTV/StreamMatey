@@ -58,5 +58,17 @@
   "options_ui": {
     "page": "options.html",
     "open_in_tab": true
+  },
+  "oauth2": {
+    "client_id": "887205281229-hbjptrj5tp55blkaehqfs6g35jg5p4ci.apps.googleusercontent.com",
+    "scopes": [
+      "openid",
+      "email",
+      "profile"
+    ],
+    "redirect_uris": [
+      "https://id.twitch.tv/oauth2/authorize",
+      "https://accounts.google.com/o/oauth2/auth"
+    ]
   }
 }
