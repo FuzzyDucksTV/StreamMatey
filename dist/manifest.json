@@ -4,7 +4,7 @@
   "version": "1.0",
   "oauth2": {
     "client_id": "887205281229-hbjptrj5tp55blkaehqfs6g35jg5p4ci.apps.googleusercontent.com",
-    "scopes": ["https://www.googleapis.com/auth/contacts.readonly"]
+    "scopes": ["https://www.googleapis.com/auth/commentanalyzer"]
   },
   "action": {
     "default_popup": "options.html",
