@@ -18,6 +18,8 @@ document.addEventListener('DOMContentLoaded', (event) => {
     };
 
     const themeToggle = document.getElementById('themeToggle');
+    const googleLoginButton = document.getElementById('googleLoginButton');
+    const twitchLoginButton = document.getElementById('twitchLoginButton');
 
     function displayError(message) {
         const errorMessageElement = document.getElementById('error-message');
@@ -103,12 +105,14 @@ document.addEventListener('DOMContentLoaded', (event) => {
         }
         savePreferences();
     });
-
-    const loginButton = document.getElementById('loginButton');
-
-    loginButton.addEventListener('click', () => {
-        chrome.runtime.sendMessage({type: 'initiateOAuth'});
+    googleLoginButton.addEventListener('click', () => {
+        chrome.runtime.sendMessage({type: 'initiateGoogleOAuth'});
     });
+
+    twitchLoginButton.addEventListener('click', () => {
+        chrome.runtime.sendMessage({type: 'initiateTwitchOAuth'});
+    });
+
     for (let feature in features) {
         features[feature].toggle.addEventListener('change', savePreferences);
         for (let option in features[feature]) {
@@ -121,27 +125,46 @@ document.addEventListener('DOMContentLoaded', (event) => {
         }
     }
 
-    chrome.storage.sync.get(['accessToken'], function(data) {
+    chrome.storage.sync.get(['googleAccessToken', 'twitchAccessToken'], function(data) {
         if (chrome.runtime.lastError) {
-            console.error('Error loading access token:', chrome.runtime.lastError);
-            displayError('Error loading access token: ' + chrome.runtime.lastError.message);
+            console.error('Error loading access tokens:', chrome.runtime.lastError);
+            displayError('Error loading access tokens: ' + chrome.runtime.lastError.message);
             return;
         }
 
-        if (data.accessToken) {
-            loginButton.style.display = 'none';
-            let logoutButton = document.createElement('button');
-            logoutButton.innerText = 'Logout';
-            document.getElementById('twitchAuth').appendChild(logoutButton);
+        if (data.googleAccessToken) {
+            googleLoginButton.style.display = 'none';
+            let googleLogoutButton = document.createElement('button');
+            googleLogoutButton.innerText = 'Logout from Google';
+            document.getElementById('googleAuth').appendChild(googleLogoutButton);
 
-            logoutButton.addEventListener('click', () => {
-                chrome.storage.sync.remove('accessToken', function() {
+            googleLogoutButton.addEventListener('click', () => {
+                chrome.storage.sync.remove('googleAccessToken', function() {
                     if (chrome.runtime.lastError) {
-                        console.error('Error removing access token:', chrome.runtime.lastError);
-                        displayError('Error removing access token: ' + chrome.runtime.lastError.message);
+                        console.error('Error removing Google access token:', chrome.runtime.lastError);
+                        displayError('Error removing Google access token: ' + chrome.runtime.lastError.message);
                     } else {
-                        loginButton.style.display = 'block';
-                        logoutButton.remove();
+                        googleLoginButton.style.display = 'block';
+                        googleLogoutButton.remove();
+                    }
+                });
+            });
+        }
+
+        if (data.twitchAccessToken) {
+            twitchLoginButton.style.display = 'none';
+            let twitchLogoutButton = document.createElement('button');
+            twitchLogoutButton.innerText = 'Logout from Twitch';
+            document.getElementById('twitchAuth').appendChild(twitchLogoutButton);
+
+            twitchLogoutButton.addEventListener('click', () => {
+                chrome.storage.sync.remove('twitchAccessToken', function() {
+                    if (chrome.runtime.lastError) {
+                        console.error('Error removing Twitch access token:', chrome.runtime.lastError);
+                        displayError('Error removing Twitch access token: ' + chrome.runtime.lastError.message);
+                    } else {
+                        twitchLoginButton.style.display = 'block';
+                        twitchLogoutButton.remove();
                     }
                 });
             });
