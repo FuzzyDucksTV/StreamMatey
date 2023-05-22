@@ -6,9 +6,7 @@ const { google } = require('googleapis');
 
 // Variables for Twitch, Perspective, and Netlify API
 let twitchClientId = 'YOUR_TWITCH_CLIENT_ID';
-let twitchClientSecret = 'YOUR_TWITCH_CLIENT_SECRET';
 let googleClientId = 'YOUR_GOOGLE_CLIENT_ID';
-let googleClientSecret = 'YOUR_GOOGLE_CLIENT_SECRET';
 
 // Create a new instance of the Perspective API client
 const client = new perspective.ApiClient();
@@ -16,7 +14,6 @@ const client = new perspective.ApiClient();
 // Google OAuth2 client
 const oauth2Client = new google.auth.OAuth2(
   googleClientId,
-  googleClientSecret,
   'urn:ietf:wg:oauth:2.0:oob'
 );
 
@@ -28,7 +25,15 @@ function initiateGoogleOAuth() {
   });
 
   // Open the authUrl in a new tab
-  chrome.tabs.create({ url: authUrl });
+  chrome.identity.launchWebAuthFlow({ url: authUrl, interactive: true }, function(redirectUrl) {
+    if (chrome.runtime.lastError) {
+      console.error(chrome.runtime.lastError.message);
+    } else {
+      let url = new URL(redirectUrl);
+      let code = url.searchParams.get('code');
+      handleGoogleOAuthResponse(code);
+    }
+  });
 }
 
 // Function to handle Google OAuth response
@@ -197,7 +202,8 @@ async function monitorTwitchChat() {
     // Connect to Twitch
     try {
       await client.connect();
-    } catch (error) {
+    }
+      catch (error) {
       console.error('Error connecting to Twitch:', error);
       // Handle the error appropriately, e.g. by sending a message to the mods or the extension user
       sendWarningToExtUser('Error connecting to Twitch: ' + error.message);

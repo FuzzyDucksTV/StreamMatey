@@ -27,7 +27,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["options.html", "options.js", "sentiment.html", "twitchChatHandler.js"],
+      "resources": ["options.html", "options.js", "sentiment.html"],
       "matches": ["<all_urls>"],
       "use_dynamic_url": false
     },
