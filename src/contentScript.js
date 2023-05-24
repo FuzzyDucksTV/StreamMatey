@@ -1,7 +1,7 @@
 // Import required modules
 import axios from 'axios';
 import Sentiment from 'sentiment';
-import perspective from 'perspective-api-client';
+import { Perspective } from '@conversationai/perspectiveapi-js-client';
 
 // Variables for Twitch API
 let twitchAPIKey;
@@ -14,7 +14,7 @@ let client;
 axios.get('/.netlify/functions/twitchAPIKey')
   .then((response) => {
     twitchAPIKey = response.data;
-    client = new perspective({ apiKey: response.data });
+    client = new Perspective({ apiKey: response.data });
   })
   .catch((error) => {
     console.error('Error loading Twitch API key:', error);

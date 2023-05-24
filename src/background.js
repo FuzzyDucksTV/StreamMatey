@@ -6,19 +6,12 @@ const axios = require('axios');
 let twitchClientId = 'YOUR_TWITCH_CLIENT_ID';
 let netlifyFunctionUrl = 'YOUR_NETLIFY_FUNCTION_URL'; // Add your Netlify function URL here
 
-// Create a new instance of the Perspective API client
-const client = new perspective.ApiClient();
+
 
 chrome.action.onClicked.addListener(function() {
   chrome.tabs.create({url: 'options.html'});
 });
 
-// Listen for messages from the options page
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.message === 'initiateTwitchOAuth') {
-    initiateTwitchOAuth();
-  }
-});
 
 async function initiateTwitchOAuth() {
   try {
@@ -152,9 +145,665 @@ if ((request.type === 'analyzeSentiment') || (request.type === 'analyzeToxicity'
     });
 
     return true;  // Will respond asynchronously.
+} else if (request.message === 'initiateTwitchOAuth') {
+  initiateTwitchOAuth();
+  chrome.cookies.set({
+    url: 'https://www.twitch.tv',
+    name: 'accessToken',
+    value: decryptedAccessToken,
+    secure: true,
+    httpOnly: true
+} else if (request.message === 'fetchChatMessages') {
+  fetchChatMessages(request.channel)
+  .then(chatMessages => sendResponse(chatMessages))
+  .catch(error => console.error('Error fetching chat messages:', error));
+} else if (request.message === 'monitorTwitchChat') {
+  monitorTwitchChat();
+} else if (request.message === 'savePreferences') {
+  // Save the user's preferences
+  savePreferences();
+} else if (request.message === 'getPreferences') {
+  // Get the user's preferences
+  chrome.storage.sync.get(['preferences'], function(data) {
+    if (chrome.runtime.lastError) {
+      console.error('Error loading preferences:', chrome.runtime.lastError);
+      displayError('Error loading preferences: ' + chrome.runtime.lastError.message);
+      return;
+    }
+    const preferences = data.preferences;
+    if (!preferences) {
+      console.error('Error: Preferences not found');
+      displayError('Error: Preferences not found');
+      return;
+    }
+    // Decrypt the preferences using the encryption key
+    chrome.storage.sync.get(['encryptionKey'], function(data) {
+      if (chrome.runtime.lastError) {
+        console.error('Error loading encryption key:', chrome.runtime.lastError);
+        displayError('Error loading encryption key: ' + chrome.runtime.lastError.message);
+        return;
+      }
+      const encryptionKey = data.encryptionKey;
+      if (!encryptionKey) {
+        console.error('Error: Encryption key not found');
+        displayError('Error: Encryption key not found');
+        return;
+      }
+      const decryptedPreferences = decrypt(preferences, encryptionKey);
+      sendResponse(decryptedPreferences);
+    }, function(error) {
+      console.error('Error loading preferences:', error);
+      displayError('Error loading preferences: ' + error.message);
+    });
+  });
+} else if (request.message === 'getEncryptionKey') {
+  // Get the encryption key
+  chrome.storage.sync.get(['encryptionKey'], function(data) {
+    if (chrome.runtime.lastError) {
+      console.error('Error loading encryption key:', chrome.runtime.lastError);
+      displayError('Error loading encryption key: ' + chrome.runtime.lastError.message);
+      return;
+    }
+    const encryptionKey = data.encryptionKey;
+    if (!encryptionKey) {
+      console.error('Error: Encryption key not found');
+      displayError('Error: Encryption key not found');
+      return;
+    }
+    sendResponse(encryptionKey);
+  });
+} else if (request.message === 'setEncryptionKey') {
+  // Set the encryption key
+  chrome.storage.sync.set({encryptionKey: request.encryptionKey}, function() {
+    if (chrome.runtime.lastError) {
+      console.error('Error setting encryption key:', chrome.runtime.lastError);
+      displayError('Error setting encryption key: ' + chrome.runtime.lastError.message);
+    }
+  }, function(error) {
+    console.error('Error setting encryption key:', error);
+    displayError('Error setting encryption key: ' + error.message);
+  });
+
+} else if (request.message === 'getTwitchAccessToken') {
+  // Get the Twitch access token
+  chrome.storage.sync.get(['twitchAccessToken'], function(data) {
+    if (chrome.runtime.lastError) {
+      console.error('Error loading Twitch access token:', chrome.runtime.lastError);
+      displayError('Error loading Twitch access token: ' + chrome.runtime.lastError.message);
+      return;
+    }
+    const twitchAccessToken = data.twitchAccessToken;
+    if (!twitchAccessToken) {
+      console.error('Error: Twitch access token not found');
+      displayError('Error: Twitch access token not found');
+      return;
+    }
+    sendResponse(twitchAccessToken);
+  });
+} else if (request.message === 'setTwitchAccessToken') {
+  // Set the Twitch access token
+  chrome.storage.sync.set({twitchAccessToken: request.twitchAccessToken}, function() {
+    if (chrome.runtime.lastError) {
+      console.error('Error setting Twitch access token:', chrome.runtime.lastError);
+      displayError('Error setting Twitch access token: ' + chrome.runtime.lastError.message);
+    }
+  });
+} else if (request.message === 'getTwitchClientId') {
+  // Get the Twitch client ID
+  sendResponse(twitchClientId);
+} else if (request.message === 'setTwitchClientId') {
+  // Set the Twitch client ID
+  twitchClientId = request.twitchClientId;
+} else if (request.message === 'getNetlifyFunctionUrl') {
+  // Get the Netlify function URL
+  sendResponse(netlifyFunctionUrl);
+} else if (request.message === 'setNetlifyFunctionUrl') {
+  // Set the Netlify function URL
+  netlifyFunctionUrl = request.netlifyFunctionUrl;
+} else if (request.message === 'getSentimentSensitivity') {
+  // Get the sentiment sensitivity
+  sendResponse(sentimentSensitivity);
+} else if (request.message === 'setSentimentSensitivity') {
+  // Set the sentiment sensitivity
+  sentimentSensitivity = request.sentimentSensitivity;
+} else if (request.message === 'getSentimentThreshold') {
+  // Get the sentiment threshold
+  sendResponse(sentimentThreshold);
+} else if (request.message === 'setSentimentThreshold') {
+  // Set the sentiment threshold
+  sentimentThreshold = request.sentimentThreshold;
+} else if (request.message === 'getToxicityThreshold') {
+  // Get the toxicity threshold
+  sendResponse(toxicityThreshold);
+} else if (request.message === 'setToxicityThreshold') {
+  // Set the toxicity threshold
+  toxicityThreshold = request.toxicityThreshold;
+} else if (request.message === 'getWarningMessageToxic') {
+  // Get the warning message for toxic users
+  sendResponse(warningMessageToxic);
+} else if (request.message === 'setWarningMessageToxic') {
+  // Set the warning message for toxic users
+  warningMessageToxic = request.warningMessageToxic;
+} else if (request.message === 'getWarningMessageNegative') {
+  // Get the warning message for negative users
+  sendResponse(warningMessageNegative);
+} else if (request.message === 'setWarningMessageNegative') {
+  // Set the warning message for negative users
+  warningMessageNegative = request.warningMessageNegative;
+} else if (request.message === 'getCustomMessageToxic') {
+  // Get the custom message for toxic users
+  sendResponse(customMessageToxic);
+} else if (request.message === 'setCustomMessageToxic') {
+  // Set the custom message for toxic users
+  customMessageToxic = request.customMessageToxic;
+} else if (request.message === 'getCustomMessageNegative') {
+  // Get the custom message for negative users
+  sendResponse(customMessageNegative);
+} else if (request.message === 'setCustomMessageNegative') {
+  // Set the custom message for negative users
+  customMessageNegative = request.customMessageNegative;
+} else if (request.message === 'getWarningToxicUser') {
+  // Get the warning for toxic users
+  sendResponse(warningToxicUser);
+} else if (request.message === 'setWarningToxicUser') {
+  // Set the warning for toxic users
+  warningToxicUser = request.warningToxicUser;
+} else if (request.message === 'getWarningNegativeUser') {
+  // Get the warning for negative users
+  sendResponse(warningNegativeUser);
+} else if (request.message === 'setWarningNegativeUser') {
+  // Set the warning for negative users
+  warningNegativeUser = request.warningNegativeUser;
+} else if (request.message === 'getCustomMessageToxicUser') {
+  // Get the custom message for toxic users
+  sendResponse(customMessageToxicUser);
+} else if (request.message === 'setCustomMessageToxicUser') {
+  // Set the custom message for toxic users
+  customMessageToxicUser = request.customMessageToxicUser;
+} else if (request.message === 'getCustomMessageNegativeUser') {
+  // Get the custom message for negative users
+  sendResponse(customMessageNegativeUser);
+} else if (request.message === 'setCustomMessageNegativeUser') {
+  // Set the custom message for negative users
+  customMessageNegativeUser = request.customMessageNegativeUser;
+} else if (request.message === 'getEnableSentimentAnalysis') {
+  // Get whether sentiment analysis is enabled
+  sendResponse(enableSentimentAnalysis);
+} else if (request.message === 'setEnableSentimentAnalysis') {
+  // Set whether sentiment analysis is enabled
+  enableSentimentAnalysis = request.enableSentimentAnalysis;
+} else if (request.message === 'getEnableToxicityDetection') {
+  // Get whether toxicity detection is enabled
+  sendResponse(enableToxicityDetection);
+} else if (request.message === 'setEnableToxicityDetection') {
+  // Set whether toxicity detection is enabled
+  enableToxicityDetection = request.enableToxicityDetection;
+} else if (request.message === 'getEnableDarkMode') {
+  // Get whether dark mode is enabled
+  sendResponse(enableDarkMode);
+} else if (request.message === 'setEnableDarkMode') {
+  // Set whether dark mode is enabled
+  enableDarkMode = request.enableDarkMode;
+} else if (request.message === 'warningMessage') {
+  // Send a warning message to the extension user
+  sendWarningToExtUser(request.warningMessage);
+} else if (request.message === 'errorMessage') {
+  // Display an error message to the extension user
+  displayError(request.errorMessage);
+} else if (request.message === 'getSentimentLeaderboard') {
+  // Get the sentiment leaderboard
+  sendResponse(sentimentLeaderboard);
+} else if (request.message === 'setSentimentLeaderboard') {
+  // Set the sentiment leaderboard
+  sentimentLeaderboard = request.sentimentLeaderboard;
+} else if (request.message === 'getToxicityLeaderboard') {
+  // Get the toxicity leaderboard
+  sendResponse(toxicityLeaderboard);
+} else if (request.message === 'setToxicityLeaderboard') {
+  // Set the toxicity leaderboard
+  toxicityLeaderboard = request.toxicityLeaderboard;
+} else if (request.message === 'getSentimentLeaderboardDuration') {
+  // Get the sentiment leaderboard duration
+  sendResponse(sentimentLeaderboardDuration);
+} else if (request.message === 'setSentimentLeaderboardDuration') {
+  // Set the sentiment leaderboard duration
+  sentimentLeaderboardDuration = request.sentimentLeaderboardDuration;
+} else if (request.message === 'getToxicityLeaderboardDuration') {
+  // Get the toxicity leaderboard duration
+  sendResponse(toxicityLeaderboardDuration);
+} else if (request.message === 'setToxicityLeaderboardDuration') {
+  // Set the toxicity leaderboard duration
+  toxicityLeaderboardDuration = request.toxicityLeaderboardDuration;
+} else if (request.message === 'generateEncryptionKey') {
+  // Generate an encryption key
+  const encryptionKey = generateEncryptionKey();
+  sendResponse(encryptionKey);
+} else if (request.message === 'checkEncryptionKeyExists') {
+  // Check whether an encryption key exists
+  chrome.storage.sync.get(['encryptionKey'], function(data) {
+    if (chrome.runtime.lastError) {
+      console.error('Error loading encryption key:', chrome.runtime.lastError);
+      displayError('Error loading encryption key: ' + chrome.runtime.lastError.message);
+      return;
+    }
+    const encryptionKey = data.encryptionKey;
+    if (!encryptionKey) {
+      sendResponse(false);
+    } else {
+      sendResponse(true);
+    }
+  });
+} else if (request.message === 'decrypt') {
+  // Decrypt a message
+  const decryptedMessage = decrypt(request.encryptedMessage, request.encryptionKey);
+  sendResponse(decryptedMessage);
+} else if (request.message === 'encrypt') {
+  // Encrypt a message
+  const encryptedMessage = encrypt(request.message, request.encryptionKey);
+  sendResponse(encryptedMessage);
+} else if (request.message === 'decryptPreferences') {
+  // Decrypt the user's preferences
+  chrome.storage.sync.get(['preferences', 'encryptionKey'], async (data) => {
+    if (chrome.runtime.lastError) {
+      console.error('Error loading preferences:', chrome.runtime.lastError);
+      displayError('Error loading preferences: ' + chrome.runtime.lastError.message);
+      return;
+    }
+    const encryptedPreferences = data.preferences;
+    const encryptionKey = data.encryptionKey;
+    if (!encryptedPreferences || !encryptionKey) {
+      
+      console.error('Error: Encrypted preferences or encryption key not found');
+      displayError('Error: Encrypted preferences or encryption key not found');
+      return;
+    }
+    const decryptedPreferences = await decrypt(encryptedPreferences, encryptionKey);
+    sendResponse(decryptedPreferences);
+  });
+} else if (request.message === 'encryptPreferences') {
+  // Encrypt the user's preferences
+  chrome.storage.sync.get(['preferences', 'encryptionKey'], async (data) => {
+    if (chrome.runtime.lastError) {
+      console.error('Error loading preferences:', chrome.runtime.lastError);
+      displayError('Error loading preferences: ' + chrome.runtime.lastError.message);
+      return;
+    }
+    const preferences = data.preferences;
+    const encryptionKey = data.encryptionKey;
+    if (!preferences || !encryptionKey) {
+      console.error('Error: Preferences or encryption key not found');
+      displayError('Error: Preferences or encryption key not found');
+      return;
+    }
+    const encryptedPreferences = await encrypt(preferences, encryptionKey);
+    sendResponse(encryptedPreferences);
+  });
+} else if (request.message === 'decryptTwitchAccessToken') {
+  // Decrypt the Twitch access token
+  chrome.storage.sync.get(['twitchAccessToken', 'encryptionKey'], async (data) => {
+    if (chrome.runtime.lastError) {
+      console.error('Error loading Twitch access token:', chrome.runtime.lastError);
+      displayError('Error loading Twitch access token: ' + chrome.runtime.lastError.message);
+      return;
+    }
+    const encryptedAccessToken = data.twitchAccessToken;
+    const encryptionKey = data.encryptionKey;
+    if (!encryptedAccessToken || !encryptionKey) {
+      console.error('Error: Encrypted access token or encryption key not found');
+      displayError('Error: Encrypted access token or encryption key not found');
+      return;
+    }
+    const decryptedAccessToken = await decrypt(encryptedAccessToken, encryptionKey);
+    sendResponse(decryptedAccessToken);
+  });
+} else if (request.message === 'encryptTwitchAccessToken') {
+  // Encrypt the Twitch access token
+  chrome.storage.sync.get(['twitchAccessToken', 'encryptionKey'], async (data) => {
+    if (chrome.runtime.lastError) {
+      console.error('Error loading Twitch access token:', chrome.runtime.lastError);
+      displayError('Error loading Twitch access token: ' + chrome.runtime.lastError.message);
+      return;
+    }
+    const accessToken = data.twitchAccessToken;
+    const encryptionKey = data.encryptionKey;
+    if (!accessToken || !encryptionKey) {
+      console.error('Error: Access token or encryption key not found');
+      displayError('Error: Access token or encryption key not found');
+      return;
+    }
+    const encryptedAccessToken = await encrypt(accessToken, encryptionKey);
+    sendResponse(encryptedAccessToken);
+  });
+} else if (request.message === 'loadEncryptionKey') {
+  // Load the encryption key
+  chrome.storage.sync.get(['encryptionKey'], function(data) {
+    if (chrome.runtime.lastError) {
+      console.error('Error loading encryption key:', chrome.runtime.lastError);
+      displayError('Error loading encryption key: ' + chrome.runtime.lastError.message);
+      return;
+    }
+    const encryptionKey = data.encryptionKey;
+    if (!encryptionKey) {
+      console.error('Error: Encryption key not found');
+      displayError('Error: Encryption key not found');
+      return;
+    }
+    sendResponse(encryptionKey);
+  });
+} else if (request.message === 'saveEncryptionKey') {
+  // Save the encryption key
+  chrome.storage.sync.set({encryptionKey: request.encryptionKey}, function() {
+    if (chrome.runtime.lastError) {
+      console.error('Error saving encryption key:', chrome.runtime.lastError);
+      displayError('Error saving encryption key: ' + chrome.runtime.lastError.message);
+    }
+  });
+} else if (request.message === 'loadTwitchAccessToken') {
+  // Load the Twitch access token
+  chrome.storage.sync.get(['twitchAccessToken'], function(data) {
+    if (chrome.runtime.lastError) {
+      console.error('Error loading Twitch access token:', chrome.runtime.lastError);
+      displayError('Error loading Twitch access token: ' + chrome.runtime.lastError.message);
+      return;
+    }
+    const twitchAccessToken = data.twitchAccessToken;
+    if (!twitchAccessToken) {
+      console.error('Error: Twitch access token not found');
+      displayError('Error: Twitch access token not found');
+      return;
+    }
+    sendResponse(twitchAccessToken);
+  });
+} else if (request.message === 'saveTwitchAccessToken') {
+  // Save the Twitch access token
+  chrome.storage.sync.set({twitchAccessToken: request.twitchAccessToken}, function() {
+    if (chrome.runtime.lastError) {
+      console.error('Error saving Twitch access token:', chrome.runtime.lastError);
+      displayError('Error saving Twitch access token: ' + chrome.runtime.lastError.message);
+    }
+  });
+} else if (request.message === 'loadPreferences') {
+  // Load the user's preferences
+  loadPreferences();
+} else if (request.message === 'savePreferences') {
+  // Save the user's preferences
+  savePreferences();
+} else if (request.message === 'loadTwitchClientId') {
+  // Load the Twitch client ID
+  sendResponse(twitchClientId);
+} else if (request.message === 'saveTwitchClientId') {
+  // Save the Twitch client ID
+  twitchClientId = request.twitchClientId;
+} else if (request.message === 'loadNetlifyFunctionUrl') {
+  // Load the Netlify function URL
+  sendResponse(netlifyFunctionUrl);
+} else if (request.message === 'saveNetlifyFunctionUrl') {
+  // Save the Netlify function URL
+  netlifyFunctionUrl = request.netlifyFunctionUrl;
+} else if (request.message === 'loadSentimentSensitivity') {
+  
+return true;
 }
-// Other message handling...
+
+function generateEncryptionKey() {
+  // Generate encryption key
+  let key;
+  window.crypto.subtle.generateKey(
+      {
+          name: "AES-GCM",
+          length: 256,
+      },
+      true,
+      ["encrypt", "decrypt"]
+  )
+  .then(newKey => {
+      key = newKey;
+      // Convert key to a storable format
+      return window.crypto.subtle.exportKey('jwk', key);
+  })
+  .then(exportedKey => {
+      // Store key in chrome.storage.sync for future use
+      chrome.storage.sync.set({ encryptionKey: exportedKey }, function() {
+          if (chrome.runtime.lastError) {
+              console.error('Error saving encryption key:', chrome.runtimelastError);
+              displayError('Error saving encryption key: ' + chrome.runtime.lastError.message);
+          }
+      }); 
+  })
+  .catch(err => {
+      console.error(err);
+      displayError('Error generating encryption key: ' + err.message);
+  });
+  return encryptionKey;
 });
+function fetchChatMessages(channel) {
+  return new Promise((resolve, reject) => {
+    const url = `https://tmi.twitch.tv/api/rooms/${channel}/recent_messages`;
+    fetch(url)
+    .then(response => response.json())
+    .then(data => {
+      const messages = data.messages.map(message => message.message.body);
+      resolve(messages);
+    })
+    .catch(error => reject(error));
+  });
+}
+function analyzeSentiment(message) {
+  const url = `https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze?key=${OAUTH_CLIENT_ID}`;
+  const data = {
+    comment: { text: message },
+    languages: ['en'],
+    requestedAttributes: { TOXICITY: {} }
+  };
+  return new Promise((resolve, reject) => {
+    fetch(url, {
+      method: 'POST',
+      body: JSON.stringify(data),
+      headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => response.json())
+    .then(data => {
+      const score = data.attributeScores.TOXICITY.summaryScore.value;
+      resolve(score);
+    })
+    .catch(error => reject(error));
+  });
+}
+
+// Function to analyze a chat message for toxicity
+async function analyzeToxicity(message) {
+  try {
+    const result = await client.analyze({ comment: { text: message } });
+    return result.attributeScores.TOXICITY.summaryScore.value;
+  } catch (error) {
+    console.error('Error analyzing toxicity:', error);
+    sendWarningToExtUser('Error analyzing toxicity: ' + error.message);
+    return null;
+  }
+}
+
+// Function to handle incoming messages
+async function handleMessage(request, sender, sendResponse) {
+  try {
+    if (request.action === 'fetchChatMessages') {
+      const messages = await fetchChatMessages(request.channel);
+      sendResponse({ messages });
+    } else if (request.action === 'analyzeSentiment') {
+      const score = analyzeSentiment(request.message);
+      sendResponse({ score });
+    } else if (request.action === 'analyzeToxicity') {
+      const score = await analyzeToxicity(request.message);
+      sendResponse({ score });
+    } else {
+      throw new Error(`Unknown action: ${request.action}`);
+    }
+  } catch (error) {
+    console.error('Error handling message:', error);
+    sendWarningToExtUser('Error handling message: ' + error.message);
+  }
+  return true; // Indicate that the response will be sent asynchronously
+}
+
+// Function to load preferences
+function loadPreferences() {
+  chrome.storage.sync.get(['preferences', 'encryptionKey'], async (data) => {
+    if (chrome.runtime.lastError) {
+      console.error('Error loading preferences:', chrome.runtime.lastError);
+      sendWarningToExtUser('Error loading preferences: ' + chrome.runtime.lastError.message);
+      return;
+    }
+
+    const encryptedPreferences = data.preferences;
+    const encryptionKey = data.encryptionKey;
+    
+    if (!encryptedPreferences || !encryptionKey) {
+      console.error('Error: Encrypted preferences or encryption key not found');
+      sendWarningToExtUser('Error: Encrypted preferences or encryption key not found');
+      return;
+    }
+
+    // Decrypt the preferences using the encryption key
+    const preferences = await decrypt(encryptedPreferences, encryptionKey);
+
+    if (preferences) {
+      enableSentimentAnalysis = preferences.sentiment.enabled;
+      enableToxicityDetection = preferences.toxicity.enabled;
+      sentimentSensitivity = preferences.sentiment.options.sensitivity;
+      toxicityThreshold = preferences.toxicity.options.threshold;
+      warningMessageToxic = preferences.toxicity.options.warningMessageToxic;
+      warningMessageNegative = preferences.toxicity.options.warningMessageNegative;
+      customMessageToxic = preferences.toxicity.options.customMessageToxic;
+      customMessageNegative = preferences.toxicity.options.customMessageNegative;
+      warningToxicUser = preferences.toxicity.options.warningToxicUser;
+      warningNegativeUser = preferences.toxicity.options.warningNegativeUser;
+      customMessageToxicUser = preferences.toxicity.options.customMessageToxicUser;
+      customMessageNegativeUser = preferences.toxicity.options.customMessageNegativeUser;
+      enableDarkMode = preferences.darkMode;
+      sentimentLeaderboard = preferences.sentiment.options.showLeaderboard;
+      toxicityLeaderboard = preferences.toxicity.options.showLeaderboard;
+      sentimentLeaderboardDuration = preferences.sentiment.options.leaderboardDuration;
+      toxicityLeaderboardDuration = preferences.toxicity.options.leaderboardDuration;
+    }
+  });
+}
+
+// Function to save preferences
+function savePreferences() {
+  chrome.storage.sync.get(['encryptionKey'], function(data) {
+    if (chrome.runtime.lastError) {
+      console.error('Error loading encryption key:', chrome.runtime.lastError);
+      displayError('Error loading encryption key: ' + chrome.runtime.lastError.message);
+      return;
+    }
+
+    const encryptionKey = data.encryptionKey;
+    if (!encryptionKey) {
+      console.error('Error: Encryption key not found');
+      displayError('Error: Encryption key not found');
+      return;
+    }
+
+    let preferences = {
+      darkMode: themeToggle.checked,
+      sentiment: {
+        enabled: features.sentiment.toggle.checked,
+        options: {
+          sensitivity: features.sentiment.sensitivity.value,
+          showLeaderboard: features.sentiment.showLeaderboard.checked,
+          leaderboardDuration: features.sentiment.leaderboardDuration.value
+        }
+      },
+      toxicity: {
+        enabled: features.toxicity.toggle.checked,
+        options: {
+          threshold: features.toxicity.threshold.value,
+          warningMessageToxic: features.toxicity.warningMessageToxic.value,
+          warningMessageNegative: features.toxicity.warningMessageNegative.value,
+          customMessageToxic: features.toxicity.customMessageToxic.value,
+          customMessageNegative: features.toxicity.customMessageNegative.value,
+          warningToxicUser: features.toxicity.warningToxicUser.checked,
+          warningNegativeUser: features.toxicity.warningNegativeUser.checked,
+          customMessageToxicUser: features.toxicity.customMessageToxicUser.checked,
+          customMessageNegativeUser: features.toxicity.customMessageNegativeUser.checked,
+          showLeaderboard: features.toxicity.showLeaderboard.checked,
+          leaderboardDuration: features.toxicity.leaderboardDuration.value
+        }
+      }
+    };
+
+    // Encrypt the preferences using the encryption key
+    const encryptedPreferences = encrypt(preferences, encryptionKey);
+    
+    // Store the encrypted preferences securely in Chrome's sync storage
+    chrome.storage.sync.set({preferences: encryptedPreferences}, function() {
+      if (chrome.runtime.lastError) {
+        console.error('Error saving preferences:', chrome.runtime.lastError);
+        displayError('Error saving preferences: ' + chrome.runtime.lastError.message);
+      }
+    });
+  });
+}
+
+// Function to get the current Twitch channel
+async function getCurrentChannel(token, clientId) {
+  try {
+    const response = await fetch('https://api.twitch.tv/helix/users', {
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Client-Id': clientId
+      }
+    });
+    if (response.status !== 200) {
+      throw new Error(`Error getting current Twitch channel: HTTP ${response.status}`);
+    }
+    const data = await response.json();
+    return data.data[0].login;
+  } catch (error) {
+    console.error('Error getting current Twitch channel:', error);
+    sendWarningToExtUser('Error getting current Twitch channel: ' + error.message);
+  }
+}
+
+// Function to monitor Twitch chat
+async function monitorTwitchChat() {
+  try {
+    // Get the encrypted Twitch access token and encryption key from Chrome's sync storage
+    chrome.storage.sync.get(['twitchAccessToken', 'encryptionKey'], async function(data) {
+      if (chrome.runtime.lastError) {
+        console.error('Error loading Twitch access token or encryption key:', chrome.runtime.lastError);
+        displayError('Error loading Twitch access token or encryption key: ' + chrome.runtime.lastError.message);
+        return;
+      }
+      const encryptedAccessToken = data.twitchAccessToken;
+      const encryptionKey = data.encryptionKey;
+      if (!encryptedAccessToken || !encryptionKey) {
+        console.error('Error: Twitch access token or encryption key not found');
+        displayError('Error: Twitch access token or encryption key not found');
+        return;
+      }
+      // Decrypt the Twitch access token using the encryption key
+      const twitchAccessToken = await decrypt(encryptedAccessToken, encryptionKey);
+      // Get the current Twitch channel
+      const channel = await getCurrentChannel(twitchAccessToken, twitchClientId);
+      // Configure the Twitch chat client
+      const options = {
+        options: { debug: true },
+        connection: { reconnect: true },
+
+        identity: { username: channel, password: `oauth:${twitchAccessToken}` },
+        channels: [channel]
+      };
+      const client = new tmi.client(options);
+      // Connect to the Twitch chat
+      client.connect();
+      // Listen for chat messages
+      client.on('message', handleChatMessage);
+    });
+  } catch (error) {
+    console.error('Error monitoring Twitch chat:', error);
+    sendWarningToExtUser('Error monitoring Twitch chat: ' + error.message);
+  }
+}
 
 // Function to handle Twitch chat messages
 const handleChatMessage = async (channel, userstate, message, self) => {
@@ -219,15 +868,22 @@ const takeAction = (username) => {
   }
 }
 
+
+
 // Function to send a warning to the extension user
+
 function sendWarningToExtUser(warningMessage) {
+
   // Display the warning message to the extension user
+  
   chrome.notifications.create({
     type: 'basic',
     iconUrl: 'icon.png',
     title: 'StreamMatey Warning',
     message: warningMessage
   });
+
+
 }
 
 async function monitorTwitchChat() {
@@ -273,20 +929,6 @@ async function monitorTwitchChat() {
 // Start monitoring Twitch chat when the extension is installed or updated
 chrome.runtime.onInstalled.addListener(monitorTwitchChat);
 
-
-// Listen for messages from the options page
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-if (request.message === 'initiateTwitchOAuth') {
-  initiateTwitchOAuth();
-} else if (request.message === 'fetchChatMessages') {
-  fetchChatMessages(request.channel)
-  .then(chatMessages => sendResponse(chatMessages))
-  .catch(error => console.error('Error fetching chat messages:', error));
-} else if (request.message === 'monitorTwitchChat') {
-  monitorTwitchChat();
-}
-
-});
 
 // Get Twitch Access Token from Chrome Storage
 let twitchAccessToken;
@@ -375,3 +1017,4 @@ async function decrypt(data, jwk) {
   }
 
 }
+
