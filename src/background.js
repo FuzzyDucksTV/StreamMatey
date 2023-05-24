@@ -120,7 +120,43 @@ async function getCurrentChannel(token, clientId) {
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-if ((request.type === 'analyzeSentiment') || (request.type === 'analyzeToxicity')) {
+ handleMessages(request, sender, sendResponse);
+});
+
+function handleMessages(request, sender, sendResponse) {
+  if (request.type === 'getPreferences') {
+    chrome.storage.sync.get(['preferences'], function(data) {
+      if (chrome.runtime.lastError) {
+        console.error('Error loading preferences:', chrome.runtime.lastError);
+        sendResponse({ error: 'Error loading preferences: ' + chrome.runtime.lastError.message });
+        return;
+      }
+      const preferences = data.preferences;
+      if (!preferences) {
+        console.error('Error: Preferences not found');
+        sendResponse({ error: 'Error: Preferences not found' });
+        return;
+      }
+      // Decrypt the preferences using the encryption key
+      chrome.storage.sync.get(['encryptionKey'], function(data) {
+        if (chrome.runtime.lastError) {
+          console.error('Error loading encryption key:', chrome.runtime.lastError);
+          sendResponse({ error: 'Error loading encryption key: ' + chrome.runtime.lastError.message });
+          return;
+        }
+        const encryptionKey = data.encryptionKey;
+        if (!encryptionKey) {
+          console.error('Error: Encryption key not found');
+          sendResponse({ error: 'Error: Encryption key not found' });
+          return;
+        }
+        const decryptedPreferences = decrypt(preferences, encryptionKey);
+        sendResponse({ preferences: decryptedPreferences });
+      });
+    });
+    return true;
+
+  } else if ((request.type === 'analyzeSentiment') || (request.type === 'analyzeToxicity')) {
     const comment = request.comment;
     const url = `https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze?key=${OAUTH_CLIENT_ID}`;
     const data = {
@@ -153,7 +189,14 @@ if ((request.type === 'analyzeSentiment') || (request.type === 'analyzeToxicity'
     value: decryptedAccessToken,
     secure: true,
     httpOnly: true
-} else if (request.type === 'fetchChatMessages') {
+  }, function(cookie) {
+    if (chrome.runtime.lastError) {
+      console.error('Error setting access token cookie:', chrome.runtime.lastError);
+      displayError('Error setting access token cookie: ' + chrome.runtime.lastError.message);
+    }
+  });}
+  
+  else if (request.type === 'fetchChatMessages') {
   fetchChatMessages(request.channel)
   .then(chatMessages => sendResponse(chatMessages))
   .catch(error => console.error('Error fetching chat messages:', error));
@@ -540,10 +583,9 @@ if ((request.type === 'analyzeSentiment') || (request.type === 'analyzeToxicity'
 } else if (request.type === 'saveNetlifyFunctionUrl') {
   // Save the Netlify function URL
   netlifyFunctionUrl = request.netlifyFunctionUrl;
-} else if (request.type === 'loadSentimentSensitivity') {
-
-return true;
 }
+}
+
 
 function generateEncryptionKey() {
   // Generate encryption key
@@ -575,7 +617,8 @@ function generateEncryptionKey() {
       displayError('Error generating encryption key: ' + err.message);
   });
   return encryptionKey;
-});
+}
+
 function fetchChatMessages(channel) {
   return new Promise((resolve, reject) => {
     const url = `https://tmi.twitch.tv/api/rooms/${channel}/recent_messages`;
@@ -993,5 +1036,5 @@ async function decrypt(data, jwk) {
       displayError('Error decrypting data: ' + err.message);
       throw err; // Propagate the error
   }
-
 }
+
