@@ -145,7 +145,7 @@ if ((request.type === 'analyzeSentiment') || (request.type === 'analyzeToxicity'
     });
 
     return true;  // Will respond asynchronously.
-} else if (request.message === 'initiateTwitchOAuth') {
+} else if (request.type === 'initiateTwitchOAuth') {
   initiateTwitchOAuth();
   chrome.cookies.set({
     url: 'https://www.twitch.tv',
@@ -153,16 +153,16 @@ if ((request.type === 'analyzeSentiment') || (request.type === 'analyzeToxicity'
     value: decryptedAccessToken,
     secure: true,
     httpOnly: true
-} else if (request.message === 'fetchChatMessages') {
+} else if (request.type === 'fetchChatMessages') {
   fetchChatMessages(request.channel)
   .then(chatMessages => sendResponse(chatMessages))
   .catch(error => console.error('Error fetching chat messages:', error));
-} else if (request.message === 'monitorTwitchChat') {
+} else if (request.type === 'monitorTwitchChat') {
   monitorTwitchChat();
-} else if (request.message === 'savePreferences') {
+} else if (request.type === 'savePreferences') {
   // Save the user's preferences
   savePreferences();
-} else if (request.message === 'getPreferences') {
+} else if (request.type === 'getPreferences') {
   // Get the user's preferences
   chrome.storage.sync.get(['preferences'], function(data) {
     if (chrome.runtime.lastError) {
@@ -196,7 +196,7 @@ if ((request.type === 'analyzeSentiment') || (request.type === 'analyzeToxicity'
       displayError('Error loading preferences: ' + error.message);
     });
   });
-} else if (request.message === 'getEncryptionKey') {
+} else if (request.type === 'getEncryptionKey') {
   // Get the encryption key
   chrome.storage.sync.get(['encryptionKey'], function(data) {
     if (chrome.runtime.lastError) {
@@ -212,7 +212,7 @@ if ((request.type === 'analyzeSentiment') || (request.type === 'analyzeToxicity'
     }
     sendResponse(encryptionKey);
   });
-} else if (request.message === 'setEncryptionKey') {
+} else if (request.type === 'setEncryptionKey') {
   // Set the encryption key
   chrome.storage.sync.set({encryptionKey: request.encryptionKey}, function() {
     if (chrome.runtime.lastError) {
@@ -224,7 +224,7 @@ if ((request.type === 'analyzeSentiment') || (request.type === 'analyzeToxicity'
     displayError('Error setting encryption key: ' + error.message);
   });
 
-} else if (request.message === 'getTwitchAccessToken') {
+} else if (request.type === 'getTwitchAccessToken') {
   // Get the Twitch access token
   chrome.storage.sync.get(['twitchAccessToken'], function(data) {
     if (chrome.runtime.lastError) {
@@ -240,7 +240,7 @@ if ((request.type === 'analyzeSentiment') || (request.type === 'analyzeToxicity'
     }
     sendResponse(twitchAccessToken);
   });
-} else if (request.message === 'setTwitchAccessToken') {
+} else if (request.type === 'setTwitchAccessToken') {
   // Set the Twitch access token
   chrome.storage.sync.set({twitchAccessToken: request.twitchAccessToken}, function() {
     if (chrome.runtime.lastError) {
@@ -248,137 +248,137 @@ if ((request.type === 'analyzeSentiment') || (request.type === 'analyzeToxicity'
       displayError('Error setting Twitch access token: ' + chrome.runtime.lastError.message);
     }
   });
-} else if (request.message === 'getTwitchClientId') {
+} else if (request.type === 'getTwitchClientId') {
   // Get the Twitch client ID
   sendResponse(twitchClientId);
-} else if (request.message === 'setTwitchClientId') {
+} else if (request.type === 'setTwitchClientId') {
   // Set the Twitch client ID
   twitchClientId = request.twitchClientId;
-} else if (request.message === 'getNetlifyFunctionUrl') {
+} else if (request.type === 'getNetlifyFunctionUrl') {
   // Get the Netlify function URL
   sendResponse(netlifyFunctionUrl);
-} else if (request.message === 'setNetlifyFunctionUrl') {
+} else if (request.type === 'setNetlifyFunctionUrl') {
   // Set the Netlify function URL
   netlifyFunctionUrl = request.netlifyFunctionUrl;
-} else if (request.message === 'getSentimentSensitivity') {
+} else if (request.type === 'getSentimentSensitivity') {
   // Get the sentiment sensitivity
   sendResponse(sentimentSensitivity);
-} else if (request.message === 'setSentimentSensitivity') {
+} else if (request.type === 'setSentimentSensitivity') {
   // Set the sentiment sensitivity
   sentimentSensitivity = request.sentimentSensitivity;
-} else if (request.message === 'getSentimentThreshold') {
+} else if (request.type === 'getSentimentThreshold') {
   // Get the sentiment threshold
   sendResponse(sentimentThreshold);
-} else if (request.message === 'setSentimentThreshold') {
+} else if (request.type === 'setSentimentThreshold') {
   // Set the sentiment threshold
   sentimentThreshold = request.sentimentThreshold;
-} else if (request.message === 'getToxicityThreshold') {
+} else if (request.type === 'getToxicityThreshold') {
   // Get the toxicity threshold
   sendResponse(toxicityThreshold);
-} else if (request.message === 'setToxicityThreshold') {
+} else if (request.type === 'setToxicityThreshold') {
   // Set the toxicity threshold
   toxicityThreshold = request.toxicityThreshold;
-} else if (request.message === 'getWarningMessageToxic') {
+} else if (request.type === 'getWarningMessageToxic') {
   // Get the warning message for toxic users
   sendResponse(warningMessageToxic);
-} else if (request.message === 'setWarningMessageToxic') {
+} else if (request.type === 'setWarningMessageToxic') {
   // Set the warning message for toxic users
   warningMessageToxic = request.warningMessageToxic;
-} else if (request.message === 'getWarningMessageNegative') {
+} else if (request.type === 'getWarningMessageNegative') {
   // Get the warning message for negative users
   sendResponse(warningMessageNegative);
-} else if (request.message === 'setWarningMessageNegative') {
+} else if (request.type === 'setWarningMessageNegative') {
   // Set the warning message for negative users
   warningMessageNegative = request.warningMessageNegative;
-} else if (request.message === 'getCustomMessageToxic') {
+} else if (request.type === 'getCustomMessageToxic') {
   // Get the custom message for toxic users
   sendResponse(customMessageToxic);
-} else if (request.message === 'setCustomMessageToxic') {
+} else if (request.type === 'setCustomMessageToxic') {
   // Set the custom message for toxic users
   customMessageToxic = request.customMessageToxic;
-} else if (request.message === 'getCustomMessageNegative') {
+} else if (request.type === 'getCustomMessageNegative') {
   // Get the custom message for negative users
   sendResponse(customMessageNegative);
-} else if (request.message === 'setCustomMessageNegative') {
+} else if (request.type === 'setCustomMessageNegative') {
   // Set the custom message for negative users
   customMessageNegative = request.customMessageNegative;
-} else if (request.message === 'getWarningToxicUser') {
+} else if (request.type === 'getWarningToxicUser') {
   // Get the warning for toxic users
   sendResponse(warningToxicUser);
-} else if (request.message === 'setWarningToxicUser') {
+} else if (request.type === 'setWarningToxicUser') {
   // Set the warning for toxic users
   warningToxicUser = request.warningToxicUser;
-} else if (request.message === 'getWarningNegativeUser') {
+} else if (request.type === 'getWarningNegativeUser') {
   // Get the warning for negative users
   sendResponse(warningNegativeUser);
-} else if (request.message === 'setWarningNegativeUser') {
+} else if (request.type === 'setWarningNegativeUser') {
   // Set the warning for negative users
   warningNegativeUser = request.warningNegativeUser;
-} else if (request.message === 'getCustomMessageToxicUser') {
+} else if (request.type === 'getCustomMessageToxicUser') {
   // Get the custom message for toxic users
   sendResponse(customMessageToxicUser);
-} else if (request.message === 'setCustomMessageToxicUser') {
+} else if (request.type === 'setCustomMessageToxicUser') {
   // Set the custom message for toxic users
   customMessageToxicUser = request.customMessageToxicUser;
-} else if (request.message === 'getCustomMessageNegativeUser') {
+} else if (request.type === 'getCustomMessageNegativeUser') {
   // Get the custom message for negative users
   sendResponse(customMessageNegativeUser);
-} else if (request.message === 'setCustomMessageNegativeUser') {
+} else if (request.type === 'setCustomMessageNegativeUser') {
   // Set the custom message for negative users
   customMessageNegativeUser = request.customMessageNegativeUser;
-} else if (request.message === 'getEnableSentimentAnalysis') {
+} else if (request.type === 'getEnableSentimentAnalysis') {
   // Get whether sentiment analysis is enabled
   sendResponse(enableSentimentAnalysis);
-} else if (request.message === 'setEnableSentimentAnalysis') {
+} else if (request.type === 'setEnableSentimentAnalysis') {
   // Set whether sentiment analysis is enabled
   enableSentimentAnalysis = request.enableSentimentAnalysis;
-} else if (request.message === 'getEnableToxicityDetection') {
+} else if (request.type === 'getEnableToxicityDetection') {
   // Get whether toxicity detection is enabled
   sendResponse(enableToxicityDetection);
-} else if (request.message === 'setEnableToxicityDetection') {
+} else if (request.type === 'setEnableToxicityDetection') {
   // Set whether toxicity detection is enabled
   enableToxicityDetection = request.enableToxicityDetection;
-} else if (request.message === 'getEnableDarkMode') {
+} else if (request.type === 'getEnableDarkMode') {
   // Get whether dark mode is enabled
   sendResponse(enableDarkMode);
-} else if (request.message === 'setEnableDarkMode') {
+} else if (request.type === 'setEnableDarkMode') {
   // Set whether dark mode is enabled
   enableDarkMode = request.enableDarkMode;
-} else if (request.message === 'warningMessage') {
+} else if (request.type === 'warningMessage') {
   // Send a warning message to the extension user
   sendWarningToExtUser(request.warningMessage);
-} else if (request.message === 'errorMessage') {
+} else if (request.type === 'errorMessage') {
   // Display an error message to the extension user
   displayError(request.errorMessage);
-} else if (request.message === 'getSentimentLeaderboard') {
+} else if (request.type === 'getSentimentLeaderboard') {
   // Get the sentiment leaderboard
   sendResponse(sentimentLeaderboard);
-} else if (request.message === 'setSentimentLeaderboard') {
+} else if (request.type === 'setSentimentLeaderboard') {
   // Set the sentiment leaderboard
   sentimentLeaderboard = request.sentimentLeaderboard;
-} else if (request.message === 'getToxicityLeaderboard') {
+} else if (request.type === 'getToxicityLeaderboard') {
   // Get the toxicity leaderboard
   sendResponse(toxicityLeaderboard);
-} else if (request.message === 'setToxicityLeaderboard') {
+} else if (request.type === 'setToxicityLeaderboard') {
   // Set the toxicity leaderboard
   toxicityLeaderboard = request.toxicityLeaderboard;
-} else if (request.message === 'getSentimentLeaderboardDuration') {
+} else if (request.type === 'getSentimentLeaderboardDuration') {
   // Get the sentiment leaderboard duration
   sendResponse(sentimentLeaderboardDuration);
-} else if (request.message === 'setSentimentLeaderboardDuration') {
+} else if (request.type === 'setSentimentLeaderboardDuration') {
   // Set the sentiment leaderboard duration
   sentimentLeaderboardDuration = request.sentimentLeaderboardDuration;
-} else if (request.message === 'getToxicityLeaderboardDuration') {
+} else if (request.type === 'getToxicityLeaderboardDuration') {
   // Get the toxicity leaderboard duration
   sendResponse(toxicityLeaderboardDuration);
-} else if (request.message === 'setToxicityLeaderboardDuration') {
+} else if (request.type === 'setToxicityLeaderboardDuration') {
   // Set the toxicity leaderboard duration
   toxicityLeaderboardDuration = request.toxicityLeaderboardDuration;
-} else if (request.message === 'generateEncryptionKey') {
+} else if (request.type === 'generateEncryptionKey') {
   // Generate an encryption key
   const encryptionKey = generateEncryptionKey();
   sendResponse(encryptionKey);
-} else if (request.message === 'checkEncryptionKeyExists') {
+} else if (request.type === 'checkEncryptionKeyExists') {
   // Check whether an encryption key exists
   chrome.storage.sync.get(['encryptionKey'], function(data) {
     if (chrome.runtime.lastError) {
@@ -393,15 +393,15 @@ if ((request.type === 'analyzeSentiment') || (request.type === 'analyzeToxicity'
       sendResponse(true);
     }
   });
-} else if (request.message === 'decrypt') {
+} else if (request.type === 'decrypt') {
   // Decrypt a message
   const decryptedMessage = decrypt(request.encryptedMessage, request.encryptionKey);
   sendResponse(decryptedMessage);
-} else if (request.message === 'encrypt') {
+} else if (request.type === 'encrypt') {
   // Encrypt a message
   const encryptedMessage = encrypt(request.message, request.encryptionKey);
   sendResponse(encryptedMessage);
-} else if (request.message === 'decryptPreferences') {
+} else if (request.type === 'decryptPreferences') {
   // Decrypt the user's preferences
   chrome.storage.sync.get(['preferences', 'encryptionKey'], async (data) => {
     if (chrome.runtime.lastError) {
@@ -425,7 +425,7 @@ if ((request.type === 'analyzeSentiment') || (request.type === 'analyzeToxicity'
   chrome.storage.sync.get(['preferences', 'encryptionKey'], async (data) => {
     if (chrome.runtime.lastError) {
       console.error('Error loading preferences:', chrome.runtime.lastError);
-      displayError('Error loading preferences: ' + chrome.runtime.lastError.message);
+      displayError('Error loading preferences: ' + chrome.runtime.lastError.type);
       return;
     }
     const preferences = data.preferences;
@@ -438,7 +438,7 @@ if ((request.type === 'analyzeSentiment') || (request.type === 'analyzeToxicity'
     const encryptedPreferences = await encrypt(preferences, encryptionKey);
     sendResponse(encryptedPreferences);
   });
-} else if (request.message === 'decryptTwitchAccessToken') {
+} else if (request.type === 'decryptTwitchAccessToken') {
   // Decrypt the Twitch access token
   chrome.storage.sync.get(['twitchAccessToken', 'encryptionKey'], async (data) => {
     if (chrome.runtime.lastError) {
@@ -456,7 +456,7 @@ if ((request.type === 'analyzeSentiment') || (request.type === 'analyzeToxicity'
     const decryptedAccessToken = await decrypt(encryptedAccessToken, encryptionKey);
     sendResponse(decryptedAccessToken);
   });
-} else if (request.message === 'encryptTwitchAccessToken') {
+} else if (request.type === 'encryptTwitchAccessToken') {
   // Encrypt the Twitch access token
   chrome.storage.sync.get(['twitchAccessToken', 'encryptionKey'], async (data) => {
     if (chrome.runtime.lastError) {
@@ -474,7 +474,7 @@ if ((request.type === 'analyzeSentiment') || (request.type === 'analyzeToxicity'
     const encryptedAccessToken = await encrypt(accessToken, encryptionKey);
     sendResponse(encryptedAccessToken);
   });
-} else if (request.message === 'loadEncryptionKey') {
+} else if (request.type === 'loadEncryptionKey') {
   // Load the encryption key
   chrome.storage.sync.get(['encryptionKey'], function(data) {
     if (chrome.runtime.lastError) {
@@ -490,7 +490,7 @@ if ((request.type === 'analyzeSentiment') || (request.type === 'analyzeToxicity'
     }
     sendResponse(encryptionKey);
   });
-} else if (request.message === 'saveEncryptionKey') {
+} else if (request.type === 'saveEncryptionKey') {
   // Save the encryption key
   chrome.storage.sync.set({encryptionKey: request.encryptionKey}, function() {
     if (chrome.runtime.lastError) {
@@ -498,7 +498,7 @@ if ((request.type === 'analyzeSentiment') || (request.type === 'analyzeToxicity'
       displayError('Error saving encryption key: ' + chrome.runtime.lastError.message);
     }
   });
-} else if (request.message === 'loadTwitchAccessToken') {
+} else if (request.type === 'loadTwitchAccessToken') {
   // Load the Twitch access token
   chrome.storage.sync.get(['twitchAccessToken'], function(data) {
     if (chrome.runtime.lastError) {
@@ -514,7 +514,7 @@ if ((request.type === 'analyzeSentiment') || (request.type === 'analyzeToxicity'
     }
     sendResponse(twitchAccessToken);
   });
-} else if (request.message === 'saveTwitchAccessToken') {
+} else if (request.type === 'saveTwitchAccessToken') {
   // Save the Twitch access token
   chrome.storage.sync.set({twitchAccessToken: request.twitchAccessToken}, function() {
     if (chrome.runtime.lastError) {
@@ -522,26 +522,26 @@ if ((request.type === 'analyzeSentiment') || (request.type === 'analyzeToxicity'
       displayError('Error saving Twitch access token: ' + chrome.runtime.lastError.message);
     }
   });
-} else if (request.message === 'loadPreferences') {
+} else if (request.type === 'loadPreferences') {
   // Load the user's preferences
   loadPreferences();
-} else if (request.message === 'savePreferences') {
+} else if (request.type === 'savePreferences') {
   // Save the user's preferences
   savePreferences();
-} else if (request.message === 'loadTwitchClientId') {
+} else if (request.type === 'loadTwitchClientId') {
   // Load the Twitch client ID
   sendResponse(twitchClientId);
-} else if (request.message === 'saveTwitchClientId') {
+} else if (request.type === 'saveTwitchClientId') {
   // Save the Twitch client ID
   twitchClientId = request.twitchClientId;
-} else if (request.message === 'loadNetlifyFunctionUrl') {
+} else if (request.type === 'loadNetlifyFunctionUrl') {
   // Load the Netlify function URL
   sendResponse(netlifyFunctionUrl);
-} else if (request.message === 'saveNetlifyFunctionUrl') {
+} else if (request.type === 'saveNetlifyFunctionUrl') {
   // Save the Netlify function URL
   netlifyFunctionUrl = request.netlifyFunctionUrl;
-} else if (request.message === 'loadSentimentSensitivity') {
-  
+} else if (request.type === 'loadSentimentSensitivity') {
+
 return true;
 }
 
@@ -620,28 +620,6 @@ async function analyzeToxicity(message) {
     sendWarningToExtUser('Error analyzing toxicity: ' + error.message);
     return null;
   }
-}
-
-// Function to handle incoming messages
-async function handleMessage(request, sender, sendResponse) {
-  try {
-    if (request.action === 'fetchChatMessages') {
-      const messages = await fetchChatMessages(request.channel);
-      sendResponse({ messages });
-    } else if (request.action === 'analyzeSentiment') {
-      const score = analyzeSentiment(request.message);
-      sendResponse({ score });
-    } else if (request.action === 'analyzeToxicity') {
-      const score = await analyzeToxicity(request.message);
-      sendResponse({ score });
-    } else {
-      throw new Error(`Unknown action: ${request.action}`);
-    }
-  } catch (error) {
-    console.error('Error handling message:', error);
-    sendWarningToExtUser('Error handling message: ' + error.message);
-  }
-  return true; // Indicate that the response will be sent asynchronously
 }
 
 // Function to load preferences
@@ -1017,4 +995,3 @@ async function decrypt(data, jwk) {
   }
 
 }
-
