@@ -7,9 +7,7 @@ module.exports = {
   entry: {
     background: './src/background.js',
     options: './src/options.js',
-    twitchChatHandler: './src/twitchChatHandler.js',
     contentScript: './src/contentScript.js',
-    netlifyFunctions: './src/netlifyFunctions.js'
   },
   output: {
     path: path.resolve(__dirname, 'dist'),

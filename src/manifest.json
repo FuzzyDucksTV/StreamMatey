@@ -15,11 +15,11 @@
   },
   "permissions": [
     "storage",
-    "identity"
+    "identity",
+    "notifications"
   ],
   "host_permissions": [
     "https://api.twitch.tv/*",
-    "https://api-inference.huggingface.co/*",
     "https://api.netlify.com/*"
   ],
   "content_security_policy": {
@@ -27,7 +27,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["options.html", "options.js", "sentiment.html"],
+      "resources": ["options.html", "options.js", "sentiment.html", "contentScript.js"],
       "matches": ["<all_urls>"],
       "use_dynamic_url": false
     },
@@ -70,5 +70,11 @@
       "https://id.twitch.tv/oauth2/authorize",
       "https://accounts.google.com/o/oauth2/auth"
     ]
-  }
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["contentScript.js"]
+    }
+  ]
 }
