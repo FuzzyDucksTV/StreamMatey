@@ -1,0 +1,181 @@
+//Handle  the login and logout of the user
+// Path: src\handleTwitchLoginLogout.js
+// Get Twitch Access Token from Chrome Storage
+let twitchAccessToken;
+chrome.storage.sync.get('twitchAccessToken', function(data) {
+  twitchAccessToken = data.twitchAccessToken;
+  if (!twitchAccessToken) {
+    console.log('No Twitch Access Token found in Chrome storage');
+    // If no Twitch Access Token is found in Chrome storage, try to get one from the cookies
+    chrome.cookies.get({
+        url: 'https://www.twitch.tv',
+        name: 'accessToken'
+        }, function(cookie) {
+        if (cookie) {
+            console.log('Twitch Access Token found in cookies:', cookie.value);
+            twitchAccessToken = cookie.value;
+            // Store the Twitch Access Token in Chrome storage
+            chrome.storage.sync.set({ twitchAccessToken: twitchAccessToken }, function() {
+                if (chrome.runtime.lastError) {
+                console.error('Error setting Twitch Access Token:', chrome.runtime.lastError);
+                sendWarningToExtUser('Error setting Twitch Access Token: ' + chrome.runtime.lastError.message);
+                }
+            });
+        } else {
+            // If no Twitch Access Token is found in the cookies this means the user is not logged in to Twitch
+            console.log('No Twitch Access Token found in cookies');
+        }
+        }
+    );
+    } else {
+    console.log('Twitch Access Token found in Chrome storage:', twitchAccessToken);
+    }
+});
+
+
+// Handle the login and logout of the user
+chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+    if (request.type === 'checkTwitchLogin') {
+        checkTwitchLogin(sendResponse);
+        return true; // Needed to make the sendResponse asynchronous
+    } else if (request.type === 'twitchLogin') {
+        twitchLogin(sendResponse);
+        return true; // Needed to make the sendResponse asynchronous
+    } else if (request.type === 'twitchLogout') {
+        twitchLogout(sendResponse);
+        return true; // Needed to make the sendResponse asynchronous
+    }
+});
+
+// Function to log the user in to Twitch
+function twitchLogin(sendResponse) {
+    // Get the client ID from the manifest
+    const clientId = chrome.runtime.getManifest().oauth2.client_id;
+    // Generate a random string for the state parameter
+
+    // Save the state and nonce in storage
+    initiateTwitchOAuth(clientId);
+    // Send a response
+    sendResponse({ loggedIn: true});
+}
+
+// Function to log the user out of Twitch
+function twitchLogout(sendResponse) {
+    // Remove the access token from storage
+    chrome.storage.sync.remove(['twitchAccessToken'], function() {
+        if (chrome.runtime.lastError) {
+            console.error('Error removing access token:', chrome.runtime.lastError);
+            sendResponse({ error: 'Error removing access token: ' + chrome.runtime.lastError.message });
+            return;
+        }
+        // Send a message to the content script to reload the page
+        chrome.tabs.sendMessage(sender.tab.id, { type: 'reloadPage' });
+        // Send a response
+        sendResponse({});
+    });
+}
+
+// Function to check if the user is logged in to Twitch
+function checkTwitchLogin(sendResponse) {
+    chrome.storage.sync.get(['twitchAccessToken'], function(data) {
+      if (chrome.runtime.lastError) {
+        console.error('Error loading Twitch access token:', chrome.runtime.lastError);
+        sendResponse({ loggedIn: false });
+        return;
+      }
+      const twitchAccessToken = data.twitchAccessToken;
+      if (!twitchAccessToken) {
+        //console.error('Error: Twitch access token not found');
+        sendResponse({ loggedIn: false });
+        return;
+      }
+      // Decrypt the access token using the encryption key
+      chrome.storage.sync.get(['encryptionKey'], function(data) {
+        if (chrome.runtime.lastError) {
+          console.error('Error loading encryption key:', chrome.runtime.lastError);
+          sendResponse({ error: 'Error loading encryption key: ' + chrome.runtime.lastError.message, loggedIn: false });
+          return;
+        }
+        const encryptionKey = data.encryptionKey;
+        if (!encryptionKey) {
+          console.error('Error: Encryption key not found');
+          sendResponse({ loggedIn: false });
+          return;
+        }
+        const accessToken = decrypt(twitchAccessToken, encryptionKey);
+        // Check if the access token is still valid
+        fetch('https://id.twitch.tv/oauth2/validate', {
+          headers: {
+            'Authorization': `OAuth ${accessToken}`
+          }
+        }).then(response => {
+          if (response.status === 401) {
+            // Access token is invalid, so remove it from storage
+            chrome.storage.sync.remove(['twitchAccessToken'], function() {
+              if (chrome.runtime.lastError) {
+                console.error('Error removing Twitch access token:', chrome.runtime.lastError);
+                sendResponse({ error: 'Error removing Twitch access token: ' + chrome.runtime.lastError.message, loggedIn: false });
+                return;
+              }
+              sendResponse({ loggedIn: false });
+            });
+          } else {
+            sendResponse({ loggedIn: true });
+          }
+        }).catch(error => {
+          console.error('Error validating Twitch access token:', error);
+          sendResponse({ error: 'Error validating Twitch access token: ' + error.message,loggedIn: false });
+          
+        });
+      });
+    });
+  }
+
+ 
+
+    // Function to initiate the Twitch OAuth flow
+    
+    async function initiateTwitchOAuth(clientId) {
+        try {
+            // Get the URL of the Twitch OAuth function
+            getTwitchAccessToken(clientId);
+        } catch (error) {
+            console.error('Error initiating Twitch OAuth flow:', error);
+            displayError('Error initiating Twitch OAuth flow: ' + error.message);
+        }
+      }
+
+
+
+
+
+  //Store the access token securely in Chrome's sync storage
+  function storeInCookies(decryptedAccessToken){
+    chrome.cookies.set({
+    url: 'https://www.twitch.tv',
+    name: 'accessToken',
+    value: decryptedAccessToken,
+    secure: true,
+    httpOnly: true
+  }, function(cookie) {
+    if (chrome.runtime.lastError) {
+      console.error('Error setting access token cookie:', chrome.runtime.lastError);
+      displayError('Error setting access token cookie: ' + chrome.runtime.lastError.message);
+    }
+  });
+  }
+
+  function fetchChatMessages(channel) {
+    return new Promise((resolve, reject) => {
+      const url = `https://tmi.twitch.tv/api/rooms/${channel}/recent_messages`;
+      fetch(url)
+      .then(response => response.json())
+      .then(data => {
+        const messages = data.messages.map(message => message.message.body);
+        resolve(messages);
+      })
+      .catch(error => reject(error));
+    });
+  }
+
+  

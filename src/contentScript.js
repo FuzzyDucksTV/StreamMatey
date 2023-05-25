@@ -1,25 +1,3 @@
-// Import required modules
-import axios from 'axios';
-import Sentiment from 'sentiment';
-import { Perspective } from '@conversationai/perspectiveapi-js-client';
-
-// Variables for Twitch API
-let twitchAPIKey;
-
-// Create a new instance of the Sentiment Analyzer and Perspective API client
-const sentiment = new Sentiment();
-let client;
-
-// Load the Twitch API key from the Netlify function
-axios.get('/.netlify/functions/twitchAPIKey')
-  .then((response) => {
-    twitchAPIKey = response.data;
-    client = new Perspective({ apiKey: response.data });
-  })
-  .catch((error) => {
-    console.error('Error loading Twitch API key:', error);
-    sendWarningToExtUser('Error loading Twitch API key: ' + error.message);
-  });
 
 // Variables to store the user's preferences
 let enableSentimentAnalysis = true;
@@ -27,151 +5,180 @@ let enableToxicityDetection = true;
 let sentimentSensitivity = null;
 let toxicitySensitivity = null;
 
+// Variables to store the sentiment and toxicity scores
+let sentimentScore = null;
+let toxicityScore = null;
+
+
 // Additional options
 let sentimentOptions = {};
 let toxicityOptions = {};
 
-// Function to fetch chat messages from Twitch
-async function fetchChatMessages(channel) {
-  try {
-    const response = await axios.get(`https://api.twitch.tv/kraken/channels/${channel}/chat`, {
-      headers: {
-        'Client-ID': twitchAPIKey,
-        'Authorization': `Bearer ${twitchAPIKey}`
+
+// Function to get the user's preferences from background.js
+function getPreferences() {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage({ type: 'getPreferences' }, (response) => {
+      if (chrome.runtime.lastError) {
+        reject(chrome.runtime.lastError);
+      } else {
+        resolve(response);
       }
     });
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching chat messages:', error);
-    sendWarningToExtUser('Error fetching chat messages: ' + error.message);
+  });
+}
+
+// function to set preference variables from getPreferences()
+function setPreferenceVariables() {
+  getPreferences().then((preferences) => {
+    enableSentimentAnalysis = preferences.sentiment.enabled;
+    enableToxicityDetection = preferences.toxicity.enabled;
+    sentimentSensitivity = preferences.sentiment.options.sensitivity;
+    toxicitySensitivity = preferences.toxicity.options.sensitivity;
+  }).catch((error) => {
+    console.error('Error:', error);
+    sendWarningToExtUser('Error: ' + error.message);
+  });
+}
+
+
+//function to update the leaderboard
+function updateLeaderboard(text) {
+  //Need to update the leaderboard for sentiment and toxicity to show the (top 3 most positive (sentiment) = the top 3 on the leaderboard) and (top 3 negative (toxicity) = the bottom 3 on the leaderboard)
+  
+  //get the leaderboard
+  let leaderboard = document.getElementById('leaderboard');
+  //get the leaderboard items
+  let leaderboardItems = leaderboard.getElementsByTagName('li');
+  //get the leaderboard items text
+  let leaderboardItemsText = [];
+  for (let i = 0; i < leaderboardItems.length; i++) {
+    leaderboardItemsText.push(leaderboardItems[i].innerText);
+  }
+  //get the leaderboard items scores
+  let leaderboardItemsScores = [];
+  for (let i = 0; i < leaderboardItemsText.length; i++) {
+    leaderboardItemsScores.push(leaderboardItemsText[i].split(' ')[1]);
+  }
+  //get the leaderboard items names
+  let leaderboardItemsNames = [];
+  for (let i = 0; i < leaderboardItemsText.length; i++) {
+    leaderboardItemsNames.push(leaderboardItemsText[i].split(' ')[0]);
+  }
+  //get the leaderboard items names and scores
+  let leaderboardItemsNamesAndScores = [];
+  for (let i = 0; i < leaderboardItemsText.length; i++) {
+    leaderboardItemsNamesAndScores.push(leaderboardItemsText[i].split(' '));
+  }
+  //get the leaderboard items names and scores sorted by score
+  let leaderboardItemsNamesAndScoresSortedByScore = leaderboardItemsNamesAndScores.sort(function(a, b) {
+    return b[1] - a[1];
+  });
+  
+  //get the sentiment score
+  let sentimentScore = text.sentimentScore;
+  //get the toxicity score
+  let toxicityScore = text.toxicityScore;
+  //get the name
+  let name = text.name;
+  //get the name and score
+  let nameAndScore = [name, sentimentScore];
+  //get the name and score sorted by score
+  let nameAndScoreSortedByScore = [name, sentimentScore].sort(function(a, b) {
+    return b[1] - a[1];
+  });
+
+  //if the leaderboard is empty
+  if (leaderboardItemsText.length == 0) {
+    //add the name and score to the leaderboard
+    let li = document.createElement('li');
+    li.appendChild(document.createTextNode(name + ' ' + sentimentScore));
+
+    leaderboard.appendChild(li);
+  }
+  //if the leaderboard is not empty
+  else {
+    //if the leaderboard is not full
+    if (leaderboardItemsText.length < 3) {
+      //add the name and score to the leaderboard
+      let li = document.createElement('li');
+      li.appendChild(document.createTextNode(name + ' ' + sentimentScore));
+      
+      leaderboard.appendChild(li);
+    }
+    //if the leaderboard is full
+    else {
+      //if the name and score is greater than the lowest score on the leaderboard
+      if (nameAndScoreSortedByScore[1] > leaderboardItemsNamesAndScoresSortedByScore[2][1]) {
+        //remove the lowest score on the leaderboard
+        leaderboard.removeChild(leaderboardItems[2]);
+        //add the name and score to the leaderboard
+        let li = document.createElement('li');
+        li.appendChild(document.createTextNode(name + ' ' + sentimentScore));
+
+        leaderboard.appendChild(li);
+      }
+    }
   }
 }
 
-// Function to analyze a chat message for sentiment
-function analyzeSentiment(message) {
-  try {
-    const result = sentiment.analyze(message);
-    return result.comparative;
-  } catch (error) {
-    console.error('Error analyzing sentiment:', error);
-    sendWarningToExtUser('Error analyzing sentiment: ' + error.message);
-    return null;
-  }
-}
 
-// Function to analyze a chat message for toxicity
-async function analyzeToxicity(message) {
-  try {
-    const result = await client.analyze({ comment: { text: message } });
-    return result.attributeScores.TOXICITY.summaryScore.value;
-  } catch (error) {
-    console.error('Error analyzing toxicity:', error);
-    sendWarningToExtUser('Error analyzing toxicity: ' + error.message);
-    return null;
-  }
-}
 
 // Function to handle incoming messages
 async function handleMessage(request, sender, sendResponse) {
   try {
-    if (request.action === 'fetchChatMessages') {
-      const messages = await fetchChatMessages(request.channel);
-      sendResponse({ messages });
-    } else if (request.action === 'analyzeSentiment') {
-      const score = analyzeSentiment(request.message);
-      sendResponse({ score });
-    } else if (request.action === 'analyzeToxicity') {
-      const score = await analyzeToxicity(request.message);
-      sendResponse({ score });
-    } else {
-      throw new Error(`Unknown action: ${request.action}`);
+    switch (request.type) {
+      case 'sentimentAnalysis':
+        if (enableSentimentAnalysis) {
+          sentimentScore = await getSentimentScore(request.text);
+          updateMeters(sentimentScore, toxicityScore);
+        }
+        break;
+      case 'toxicityDetection':
+        if (enableToxicityDetection) {
+          toxicityScore = await getToxicityScore(request.text);
+          updateMeters(sentimentScore, toxicityScore);
+          
+        }
+        break;
+      case 'updateLeaderboard':
+        updateLeaderboard(request);
+        break;
+      case 'sentimentAnalysisOptions':
+        sentimentOptions = request.options;
+        break;
+      case 'toxicityDetectionOptions':
+        toxicityOptions = request.options;
+        break;
+      default:
+        console.error('Error: Invalid message type received');
+        sendWarningToExtUser('Error: Invalid message type received');
+        break;
     }
-  } catch (error) {
-    console.error('Error handling message:', error);
-    sendWarningToExtUser('Error handling message: ' + error.message);
   }
-  return true; // Indicate that the response will be sent asynchronously
+  catch (error) {
+    console.error('Error:', error);
+    sendWarningToExtUser('Error: ' + error.message);
+  }
+
+  sendResponse({}); // Send an empty response
+
+
+
+  
+
 }
 
-// Function to load preferences
-function loadPreferences() {
-  chrome.storage.sync.get(['preferences', 'encryptionKey'], async (data) => {
-    if (chrome.runtime.lastError) {
-      console.error('Error loading preferences:', chrome.runtime.lastError);
-      sendWarningToExtUser('Error loading preferences: ' + chrome.runtime.lastError.message);
-      return;
-    }
-
-    const encryptedPreferences = data.preferences;
-    const encryptionKey = data.encryptionKey;
-
-    if (!encryptedPreferences || !encryptionKey) {
-      console.error('Error: Encrypted preferences or encryption key not found');
-      sendWarningToExtUser('Error: Encrypted preferences or encryption key not found');
-      return;
-    }
-
-    // Decrypt the preferences using the encryption key
-    const preferences = await decrypt(encryptedPreferences, encryptionKey);
-
-    if (preferences) {
-      enableSentimentAnalysis = preferences.sentiment.enabled;
-      enableToxicityDetection = preferences.toxicity.enabled;
-      sentimentSensitivity = preferences.sentiment.options.sensitivity;
-      toxicitySensitivity = preferences.toxicity.options.sensitivity;
-    }
-  });
-}
-
-// Load the user's preferences when the content script starts
-loadPreferences();
-
-// Listen for messages from the content script and options page
+setPreferenceVariables();
+// Listen for messages from the background script
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'updatePreferences') {
-    loadPreferences();
+    setPreferenceVariables();
   } else {
     handleMessage(request, sender, sendResponse); // Handle other actions
   }
   return true; // Indicate that the response will be sent asynchronously
 });
-
-// Function to send a warning to the extension user
-function sendWarningToExtUser(warningMessage) {
-  // Display the warning message to the extension user
-  chrome.notifications.create({
-    type: 'basic',
-    iconUrl: 'icon.png',
-    title: 'StreamMatey Warning',
-    message: warningMessage
-  });
-}
-
-// Function to decrypt data
-async function decrypt(data, jwk) {
-  // Import the JWK back to a CryptoKey
-  const key = await window.crypto.subtle.importKey('jwk', jwk, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
-
-  let parts = data.split(',');
-  let iv = new Uint8Array(decodeURIComponent(escape(atob(parts[0]))).split('').map(c => c.charCodeAt(0)));
-  let encrypted = new Uint8Array(decodeURIComponent(escape(atob(parts[1]))).split('').map(c => c.charCodeAt(0)));
-
-  try {
-      const decrypted = await window.crypto.subtle.decrypt(
-          {
-              name: "AES-GCM",
-              iv: iv,
-          },
-          key,
-          encrypted
-      );
-      return JSON.parse(new TextDecoder().decode(decrypted));
-  } catch (err) {
-      console.error(err);
-      sendWarningToExtUser('Error decrypting data: ' + err.message);
-      throw err; // Propagate the error
-  }
-}
 
 // Function to update the sentiment and toxicity meters in the HTML
 function updateMeters(sentimentScore, toxicityScore) {
@@ -189,27 +196,3 @@ function updateMeters(sentimentScore, toxicityScore) {
   }
 }
 
-// Function to handle chat messages
-async function handleChatMessage(message) {
-  let sentimentScore = null;
-  let toxicityScore = null;
-
-  // Analyze the message for sentiment and toxicity
-  if (enableSentimentAnalysis) {
-    sentimentScore = analyzeSentiment(message);
-  }
-  if (enableToxicityDetection) {
-    toxicityScore = await analyzeToxicity(message);
-  }
-
-  // Update the meters in the HTML
-  updateMeters(sentimentScore, toxicityScore);
-}
-
-// Listen for chat messages
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.type === 'chatMessage') {
-    handleChatMessage(request.message);
-  }
-  return true; // Indicate that the response will be sent asynchronously
-});
