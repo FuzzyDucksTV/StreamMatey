@@ -1,7 +1,47 @@
 //Handle  the login and logout of the user
 // Path: src\handleTwitchLoginLogout.js
-// Get Twitch Access Token from Chrome Storage
-let twitchAccessToken;
+const netlifyfunctions = require('handleNetlifyAPI.js');
+const encryption = require('handleEncryption.js');
+
+
+
+// Variables for Twitch, Perspective, and Netlify API
+let twitchRefreshToken = '';
+let netlifyFunctionUrl = 'YOUR_NETLIFY_FUNCTION_URL'; // Add your Netlify function URL here
+let twitchClientId = 'YOUR_TWITCH_CLIENT_ID';
+let twitchAccessToken = '';
+
+
+// Function to send a warning to the extension user
+function sendWarningToExtUser(message) {
+  chrome.notifications.create({
+      type: 'basic',
+      iconUrl: 'icon.png',
+      title: 'StreamMatey Warning',
+      message: message
+  });
+  }
+
+
+
+//store client id in chrome storage if this is the first time the extension is being used
+chrome.storage.sync.get('clientId', function(data) {
+  if (!data.clientId) {
+
+    // Store the Twitch Client ID in Chrome storage
+    chrome.storage.sync.set({ clientId: twitchClientId }, function() {
+    if (chrome.runtime.lastError) {
+        console.error('Error setting Twitch Client ID:', chrome.runtime.lastError);
+        sendWarningToExtUser('Error setting Twitch Client ID: ' + chrome.runtime.lastError.message);
+    }
+    });
+  }
+  });
+
+// Get Twitch Access Token from Chrome Storage or cookies if it's not found in storage, then the user is not logged in to Twitch yet.
+// If the user is logged in to Twitch, the Access Token is stored in Chrome storage.
+
+
 chrome.storage.sync.get('twitchAccessToken', function(data) {
   twitchAccessToken = data.twitchAccessToken;
   if (!twitchAccessToken) {
@@ -29,12 +69,12 @@ chrome.storage.sync.get('twitchAccessToken', function(data) {
     );
     } else {
     console.log('Twitch Access Token found in Chrome storage:', twitchAccessToken);
-    }
+    } 
 });
 
 
 // Handle the login and logout of the user
-chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
+chrome.runtime.onMessage.addListener(function(request,sendResponse) {
     if (request.type === 'checkTwitchLogin') {
         checkTwitchLogin(sendResponse);
         return true; // Needed to make the sendResponse asynchronous
@@ -49,8 +89,8 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 
 // Function to log the user in to Twitch
 function twitchLogin(sendResponse) {
-    // Get the client ID from the manifest
-    const clientId = chrome.runtime.getManifest().oauth2.client_id;
+    // Get the client ID
+    const clientId = twitchClientId;
     // Generate a random string for the state parameter
 
     // Save the state and nonce in storage
@@ -129,32 +169,72 @@ function checkTwitchLogin(sendResponse) {
         });
       });
     });
-  }
+}
 
  
 
     // Function to initiate the Twitch OAuth flow
     
-    async function initiateTwitchOAuth(clientId) {
-        try {
-            // Get the URL of the Twitch OAuth function
-            getTwitchAccessToken(clientId);
+async function initiateTwitchOAuth(clientId) {
+    try {
+        // Get the URL of the Twitch OAuth function
+        const twitchAccessToken = await netlifyfunctions.getTwitchAccessToken(clientId);
+        console.log('Twitch Access Token:', twitchAccessToken);
+        // Get the encryption key from storage
+        chrome.storage.sync.get(['encryptionKey'], function(data) {
+            if (chrome.runtime.lastError) {
+              console.error('Error loading encryption key:', chrome.runtime.lastError);
+              displayError('Error loading encryption key: ' + chrome.runtime.lastError.message);
+              return;
+            }
+            const encryptionKey = data.encryptionKey;
+            if (!encryptionKey) {
+              console.error('Error: Encryption key not found');
+              displayError('Error: Encryption key not found');
+              return;
+            }
+            //encrypt the access token using the encryption key
+            const encryptedAccessToken = encryption.encryptedAccessToken(twitchAccessToken, encryptionKey);
+            // Store the access token securely in Chrome's sync storage
+            chrome.storage.sync.set({ 'twitchAccessToken': encryptedAccessToken }, function() {
+              if (chrome.runtime.lastError) {
+
+                console.error('Error setting Twitch access token:', chrome.runtime.lastError);
+                displayError('Error setting Twitch access token: ' + chrome.runtime.lastError.message);
+                return;
+              } 
+  
+
+              const encryptedAccessToken = encryption.encryptedAccessToken(twitchAccessToken, encryptionKey);
+              storeInCookies(encryptedAccessToken);
+              // Send a message to the content script to reload the page
+              chrome.tabs.sendMessage(sender.tab.id, { type: 'reloadPage' });
+              // Send a response
+              sendResponse({ loggedIn: true });
+            });
+          });
         } catch (error) {
-            console.error('Error initiating Twitch OAuth flow:', error);
-            displayError('Error initiating Twitch OAuth flow: ' + error.message);
+          console.error('Error getting Twitch access token:', error);
+          displayError('Error getting Twitch access token: ' + error.message);
+          sendResponse({ error: 'Error getting Twitch access token: ' + error.message, loggedIn: false });
         }
       }
+    
+  
+
+        
+
 
 
 
 
 
   //Store the access token securely in Chrome's sync storage
-  function storeInCookies(decryptedAccessToken){
+  function storeInCookies(encryptedAccessToken){
     chrome.cookies.set({
     url: 'https://www.twitch.tv',
     name: 'accessToken',
-    value: decryptedAccessToken,
+    value: encryptedAccessToken,
     secure: true,
     httpOnly: true
   }, function(cookie) {

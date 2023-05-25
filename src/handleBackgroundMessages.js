@@ -1,3 +1,6 @@
+// Handle messages from the content script
+chrome.runtime.onMessage.addListener(handleMessages);
+
 // Function to handle messages from the content script
 function handleMessages(request, sender, sendResponse) {
     switch (request.type) {

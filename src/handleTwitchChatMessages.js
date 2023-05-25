@@ -1,6 +1,23 @@
 // Function to monitor Twitch chat
+// Start monitoring Twitch chat when the extension is installed or updated and the user is logged in, and stop monitoring Twitch chat when the user is logged out.
+       // Also, make sure the user is currently streaming before monitoring Twitch chat.
 async function monitorTwitchChat() {
     try {
+        // Get the Twitch client ID from Chrome's sync storage
+        chrome.storage.sync.get(['twitchClientId'], function(data) {
+            if (chrome.runtime.lastError) {
+                console.error('Error loading Twitch client ID:', chrome.runtime.lastError);
+                displayError('Error loading Twitch client ID: ' + chrome.runtime.lastError.message);
+                return;
+            }
+            const twitchClientId = data.twitchClientId;
+            if (!twitchClientId) {
+                console.error('Error: Twitch client ID not found');
+                displayError('Error: Twitch client ID not found');
+                return;
+            }
+        });
+        
       // Get the encrypted Twitch access token and encryption key from Chrome's sync storage
       chrome.storage.sync.get(['twitchAccessToken', 'encryptionKey'], async function(data) {
         if (chrome.runtime.lastError) {

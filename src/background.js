@@ -2,6 +2,8 @@
 const tmi = require('tmi.js');
 const axios = require('axios');
 const { google } = require('googleapis');
+// Variables for Twitch, Perspective, and Netlify API
+
 
 require('handleEncryption.js');
 require('handleNetlifyAPI.js');
@@ -19,19 +21,11 @@ require('handleLeaderboard.js');
 
 
 
-
-// Variables for Twitch, Perspective, and Netlify API
-let twitchClientId = 'YOUR_TWITCH_CLIENT_ID';
-let netlifyFunctionUrl = 'YOUR_NETLIFY_FUNCTION_URL'; // Add your Netlify function URL here
-
 // Open options page when extension icon is clicked
 chrome.action.onClicked.addListener(() => chrome.tabs.create({url: 'options.html'}));
 
-// Handle messages from the content script
-chrome.runtime.onMessage.addListener(handleMessages);
 
-// Monitor changes in Chrome's sync storage
-chrome.storage.onChanged.addListener(logStorageChanges);
+
 
 // Check if the encryption key exists when the extension starts
 checkEncryptionKeyExists();
@@ -61,16 +55,6 @@ function sendWarningToExtUser(message) {
     
 
 
-// Function to log changes in Chrome's sync storage
-function logStorageChanges(changes, areaName) {
-  for (let key in changes) {
-    let storageChange = changes[key];
-    console.log(`Storage key "${key}" in namespace "${areaName}" changed. Old value was "${storageChange.oldValue}", new value is "${storageChange.newValue}".`);
-  }
-}
-
-  
-  
   
   /* Taken from contentScript.js
   //function to update the leaderboard
@@ -153,40 +137,9 @@ function updateLeaderboard(text) {
   }
 }
 */
-  
-  
- 
 
-
-
-// Function to handle errors
-function handleError(error, message) {
-  console.error(message, error);
-  sendWarningToExtUser(`${message}: ${error.message}`);
-}
-
-// Function to display an error to the extension user
-function displayError(message) {
-  chrome.notifications.create({
-      type: 'basic',
-      iconUrl: 'icon.png',
-      title: 'StreamMatey Error',
-      message: message
-  });
-}
-
-
-
-// Function to send a warning to the extension user
-function sendWarningToExtUser(message) {
-    chrome.notifications.create({
-        type: 'basic',
-        iconUrl: 'icon.png',
-        title: 'StreamMatey Warning',
-        message: message
-    });
-    }
-
-       // Start monitoring Twitch chat when the extension is installed or updated
+       // Start monitoring Twitch chat when the extension is installed or updated and the user is logged in, and stop monitoring Twitch chat when the user is logged out.
+       // Also, make sure the user is currently streaming before monitoring Twitch chat.
 chrome.runtime.onInstalled.addListener(monitorTwitchChat);
+
 
