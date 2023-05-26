@@ -1,4 +1,5 @@
 // Function to display error messages
+
 export function displayError(message) {
     console.error(message);
     // You can also display the error message to the user in some way

@@ -1,11 +1,7 @@
 //imports
-import { checkTwitchLogin, initiateTwitchOAuth } from './handleTwitchChatMessages.js';
-import { getPreferences, savePreferences } from './handlePreferences.js';
-import { getSentimentScoreStored } from './handleSentimentAnalysis.js';
 import { analyzeToxicity } from './handleToxicityAnalysis.js';
 import { decrypt } from './handleEncryption.js';
 import { displayError } from './errorHandling.js';
-
 
 //Variables
 const customMessageMods = getCustomMessageMods();
@@ -117,6 +113,9 @@ function getCustomMessageSentimentThreshold() {
             client.connect();
             // Listen for chat messages
             client.on('message', handleChatMessage);
+
+
+
         });
         } catch (error) {
         console.error('Error monitoring Twitch chat:', error);
@@ -124,6 +123,188 @@ function getCustomMessageSentimentThreshold() {
         }
   }
 }
+// add event listeners to monitor Twitch chat when the extension is installed or updated and the user is logged in, and stop monitoring Twitch chat when the user is logged out
+chrome.runtime.onInstalled.addListener(monitorTwitchChat);
+chrome.runtime.onStartup.addListener(monitorTwitchChat);
+chrome.storage.onChanged.addListener(function(changes, namespace) {
+    if (changes.twitchAccessToken && changes.twitchAccessToken.newValue) {
+        monitorTwitchChat();
+    }
+});
+
+//add event listeners for client
+client.on('connected', onConnectedHandler);
+client.on('disconnected', onDisconnectedHandler);
+client.on('reconnect', onReconnectHandler);
+client.on('join', onJoinHandler);
+client.on('part', onPartHandler);
+client.on('message', onMessageHandler);
+client.on('messagedeleted', onMessageDeletedHandler);
+client.on('timeout', onTimeoutHandler);
+client.on('ban', onBanHandler);
+client.on('cheer', onCheerHandler);
+client.on('giftpaidupgrade', onGiftPaidUpgradeHandler);
+client.on('hosted', onHostedHandler);
+client.on('hosting', onHostingHandler);
+client.on('raided', onRaidedHandler);
+client.on('resub', onResubHandler);
+client.on('subgift', onSubGiftHandler);
+client.on('submysterygift', onSubMysteryGiftHandler);
+client.on('subscription', onSubscriptionHandler);
+client.on('primepaidupgrade', onPrimePaidUpgradeHandler);
+client.on('rewardgift', onRewardGiftHandler);
+client.on('ritual', onRitualHandler);
+client.on('bitsbadgetier', onBitsBadgeTierHandler);
+
+
+//Function for oncheerhandler
+function onCheerHandler(channel, userstate, message) {
+    console.log(`Cheer: ${userstate['display-name']} cheered ${userstate.bits} bits`);
+
+    //check if the user is streaming
+    if (streamIsLive) {
+        try {
+            // Update the sentiment score that is in storage, based on the number of bits cheered
+            updateSentimentScore(userstate.bits);
+
+            
+        } catch (error) {
+            console.error('Error monitoring Twitch chat:', error);
+            sendWarningToExtUser('Error monitoring Twitch chat: ' + error.message);
+        }
+    }
+}
+
+// Function for onGiftPaidUpgradeHandler
+function onGiftPaidUpgradeHandler(channel, username, sender, userstate) {
+    console.log(`Gift paid upgrade from ${username} to ${userstate['display-name']}`);
+
+    //check if the user is streaming
+    if (streamIsLive) {
+        try {
+            // Update the sentiment score that is in storage by 1
+            updateSentimentScore(1);
+        } catch (error) {
+            console.error('Error monitoring Twitch chat:', error);
+            sendWarningToExtUser('Error monitoring Twitch chat: ' + error.message);
+        }
+    }
+}
+
+
+// Function for onsubgift
+function onSubGiftHandler(channel, username, streakMonths, recipient, methods, userstate) {
+    console.log(`Sub gift from ${username} to ${recipient}`);
+
+    //check if the user is streaming
+    if (streamIsLive) {
+        try {
+            // Update the sentiment score that is in storage by 1
+            updateSentimentScore(1);
+        } catch (error) {
+            console.error('Error monitoring Twitch chat:', error);
+            sendWarningToExtUser('Error monitoring Twitch chat: ' + error.message);
+        }
+    }
+}
+
+// Function for onSubMysteryGiftHandler
+function onSubMysteryGiftHandler(channel, username, numbOfSubs, methods, userstate) {
+    console.log(`Sub mystery gift from ${username} for ${numbOfSubs} subs`);
+
+    //check if the user is streaming
+    if (streamIsLive) {
+        try {
+            // Update the sentiment score that is in storage by how many subs were gifted * 10
+            updateSentimentScore(numbOfSubs * 10);
+        } catch (error) {
+            console.error('Error monitoring Twitch chat:', error);
+            sendWarningToExtUser('Error monitoring Twitch chat: ' + error.message);
+        }
+    }
+}
+
+// Function for onSubscriptionHandler
+function onSubscriptionHandler(channel, username, method, message, userstate) {
+    console.log(`Subscription from ${username}`);
+
+    //check if the user is streaming
+    if (streamIsLive) {
+        try {
+            // Update the sentiment score that is in storage by 1
+            updateSentimentScore(1);
+        } catch (error) {
+            console.error('Error monitoring Twitch chat:', error);
+            sendWarningToExtUser('Error monitoring Twitch chat: ' + error.message);
+        }
+    }
+}
+
+// Function for onPrimePaidUpgradeHandler
+function onPrimePaidUpgradeHandler(channel, username, methods, userstate) {
+    console.log(`Prime paid upgrade from ${username}`);
+
+    //check if the user is streaming
+    if (streamIsLive) {
+        try {
+            // Update the sentiment score that is in storage by 1
+
+            updateSentimentScore(1);
+        } catch (error) {
+            console.error('Error monitoring Twitch chat:', error);
+            sendWarningToExtUser('Error monitoring Twitch chat: ' + error.message);
+        }
+    }
+}
+
+// Function for onRewardGiftHandler
+function onRewardGiftHandler(channel, username, rewardType, recipient, userstate) {
+    console.log(`Reward gift from ${username} to ${recipient}`);
+
+    //check if the user is streaming
+    if (streamIsLive) {
+        try {
+            // Update the sentiment score that is in storage by 1
+            updateSentimentScore(1);
+        } catch (error) {
+            console.error('Error monitoring Twitch chat:', error);
+            sendWarningToExtUser('Error monitoring Twitch chat: ' + error.message);
+        }
+    }
+}
+
+// Function for onRitualHandler
+function onRitualHandler(channel, username, ritualType, userstate) {
+    console.log(`Ritual from ${username}`);
+
+    //check if the user is streaming
+    if (streamIsLive) {
+        try {
+            // Update the sentiment score that is in storage by 1
+            updateSentimentScore(1);
+        } catch (error) {
+            console.error('Error monitoring Twitch chat:', error);
+            sendWarningToExtUser('Error monitoring Twitch chat: ' + error.message);
+        }
+    }
+}
+
+// Function for onBitsBadgeTierHandler
+function onBitsBadgeTierHandler(channel, username, threshold, userstate) {
+    console.log(`Bits badge tier from ${username}`);
+
+    //check if the user is streaming
+    if (streamIsLive) {
+        try {
+            // Update the sentiment score that is in storage by 1
+            updateSentimentScore(1);
+        } catch (error) {
+            console.error('Error monitoring Twitch chat:', error);
+            sendWarningToExtUser('Error monitoring Twitch chat: ' + error.message);
+        }
+    }
+}
+
 
 // function to check if a stream is live
 async function checkIfStreamIsLive() {
@@ -466,14 +647,12 @@ const handleChatMessage = async (channel, userstate, message, self) => {
                 console.error('Error saving toxicity score:', chrome.runtime.lastError);
                 displayError('Error saving toxicity score: ' + chrome.runtime.lastError.message);
                 return;
+            } else {
+                // Send the toxicity score to the ContentScript.js, which will update the leaderboard and giger meter for toxicity.
+                chrome.messages.sendMessage('updateToxicityScore', 'ToxicityScore', toxicityScore);
             }
-        });
-    });
 
-    // Send the toxicity score to the ContentScript.js, which will update the leaderboard and giger meter for toxicity.
-    chrome.runtime.sendMessage({
-        type: 'toxicityScore',
-        score: toxicityScore,
+        });
     });
 }
 

@@ -6,6 +6,7 @@ export function analyzeSentiment(message) {
       languages: ['en'],
       requestedAttributes: { TOXICITY: {} }
     };
+    
     return new Promise((resolve, reject) => {
       fetch(url, {
         method: 'POST',
@@ -18,7 +19,10 @@ export function analyzeSentiment(message) {
         resolve(score);
       })
       .catch(error => reject(error));
+
+
     });
+
   }
 
   

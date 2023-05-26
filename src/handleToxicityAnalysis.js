@@ -1,6 +1,8 @@
 //Imports
 import { sendWarningToExtUser } from './handleTwitchChatMessages.js';
 
+
+
 // Function to analyze a chat message for toxicity
 export async function analyzeToxicity(message) {
     try {

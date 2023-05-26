@@ -4,9 +4,6 @@ import { getPreferences, savePreferences } from './handlePreferences.js';
 import { getSentimentScoreStored, getToxicityScore } from './handleSentimentAnalysis.js';
 
 
-// Handle messages from the content script
-chrome.runtime.onMessage.addListener(handleMessages);
-
 // Function to handle messages from the content script
 export function handleMessages(request, sender, sendResponse) {
     switch (request.type) {

@@ -2,10 +2,9 @@
 //
 
 // Imports
-import { encrypt } from './handleEncryption.js';
-import { getAccessToken } from './handleTwitchChatMessages.js';
 import { displayError } from './errorHandling.js';
-import { storeInCookies } from './handleTwitchLoginLogout.js'; 
+import { storeInCookies } from './handleTwitchLoginLogout.js';
+
 
 
 // Function declaration statement
@@ -35,34 +34,20 @@ export async function getTwitchAccessToken(clientId) {
             throw new Error('Error initiating Twitch OAuth: No response received');
         }
 
-        const accessToken = response.data.access_token;
-        if (!accessToken) {
+        const twitchAccessToken = response.data.twitchAccessToken;
+        if (!twitchAccessToken) {
             throw new Error('Error initiating Twitch OAuth: No access token returned');
-        }
-
-        // Encrypt the access token using the encryption key
-        chrome.storage.sync.get(['encryptionKey'], function(data) {
-            if (chrome.runtime.lastError) {
-                console.error('Error loading encryption key:', chrome.runtime.lastError);
-                displayError('Error loading encryption key: ' + chrome.runtime.lastError.message);
-                return;
-            }
-            const encryptionKey = data.encryptionKey;
-            if (!encryptionKey) {
-                console.error('Error: Encryption key not found');
-                displayError('Error: Encryption key not found');
-                return;
-            }
-            const encryptedAccessToken = encrypt(accessToken, encryptionKey);
-            storeInCookies(encryptedAccessToken);
+        } else {
+            storeInCookies(twitchAccessToken);
             // Store the encrypted access token securely in Chrome's sync storage
-            chrome.storage.sync.set({ twitchAccessToken: encryptedAccessToken }, function() {
+            chrome.storage.sync.set({ twitchAccessToken: twitchAccessToken }, function() {
                 if (chrome.runtime.lastError) {
                     console.error('Error storing Twitch access token:', chrome.runtime.lastError);
                     displayError('Error storing Twitch access token: ' + chrome.runtime.lastError.message);
                 }
             });
-        });
+        }
+
     } catch (error) {
         console.error('Error initiating Twitch OAuth:', error);
         displayError('Error initiating Twitch OAuth: ' + error.message);

@@ -1,3 +1,7 @@
+// Description: This file contains the front end script of the chrome ext for the sentiment.html page.
+//
+
+// Imports
 
 // Variables to store the user's preferences
 let enableSentimentAnalysis = true;
@@ -14,6 +18,11 @@ let toxicityScore = null;
 let sentimentOptions = {};
 let toxicityOptions = {};
 
+// Variables to store the leaderboard
+let leaderboard = [];
+
+// Variables to store the chat history
+let chatHistory = [];
 
 // Function to get the user's preferences from background.js
 function getPreferences() {
@@ -165,8 +174,6 @@ function updateLeaderboard(text) {
 
   //get the sentiment score
   let sentimentScore = text.sentimentScore;
-  //get the toxicity score
-  let toxicityScore = text.toxicityScore;
   //get the name
   let name = text.name;
   //get the name and score
@@ -175,6 +182,18 @@ function updateLeaderboard(text) {
   let nameAndScoreSortedByScore = [name, sentimentScore].sort(function(a, b) {
     return b[1] - a[1];
   });
+
+    //get the toxicity score
+    let toxicityScore = text.toxicityScore;
+    //get the name
+    //get the name and score
+    let nameAndToxicScore = [name, toxicityScore];
+    //get the name and score sorted by score
+    let nameAndToxicScoreSortedByScore = [name, toxicityScore].sort(function(a, b) {
+      return b[1] - a[1];
+    });
+
+
 
   //if the leaderboard is empty
   if (leaderboardItemsText.length == 0) {
@@ -227,6 +246,54 @@ function updateMeters(sentimentScore, toxicityScore) {
   }
 }
 
+// Function to update the sentiment score in the HTML
+function updateSentimentScore(sentimentScore) {
+  const sentimentScoreElement = document.getElementById('sentimentScore');
 
+  if (sentimentScore !== null) {
+    sentimentScoreElement.innerHTML = sentimentScore;
+  }
+}
+
+// Function to update the toxicity score in the HTML
+function updateToxicityScore(toxicityScore) {
+  const toxicityScoreElement = document.getElementById('toxicityScore');
+
+  if (toxicityScore !== null) {
+    toxicityScoreElement.innerHTML = toxicityScore;
+  }
+}
+
+// Function to update the sentiment and toxicity scores in the HTML
+function updateScores(sentimentScore, toxicityScore) {
+  updateSentimentScore(sentimentScore);
+  updateToxicityScore(toxicityScore);
+}
+
+//function to get toxicity score
+function getToxicityScore(text) {
+  //get the toxicity score
+  let toxicityScore = text.toxicityScore;
+  //check if the toxicity score is null
+  if (toxicityScore == null) {
+    //set the toxicity score to 0
+    toxicityScore = 0;
+  }
+  //return the toxicity score
+  return toxicityScore;
+}
+
+//function to get sentiment score
+function getSentimentScore(text) {
+  //get the sentiment score
+  let sentimentScore = text.sentimentScore;
+  //check if the sentiment score is null
+  if (sentimentScore == null) {
+    //set the sentiment score to 0
+    sentimentScore = 0;
+  }
+  //return the sentiment score
+  return sentimentScore;
+}
 
 

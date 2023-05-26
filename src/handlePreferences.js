@@ -83,13 +83,10 @@
         preferences.sentiment.options.leaderboardType = 'top';
         preferences.toxicity.options.leaderboardType = 'bottom';
 
-        // Set default values for the sentiment and toxicity scores
-        sentimentScore = null;
-        toxicityScore = null;
 
         // Set default values for the sentiment and toxicity options
-        sentimentOptions = {};
-        toxicityOptions = {};
+        let sentimentOptions = {};
+        let toxicityOptions = {};
         sentimentOptions.sensitivity = 0.5;
         toxicityOptions.threshold = 0.5;
         toxicityOptions.customMessagetoMods = "This message from {user} may be toxic.";
@@ -196,3 +193,5 @@
               });
             });
           }
+
+          

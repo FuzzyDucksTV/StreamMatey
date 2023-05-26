@@ -3,8 +3,7 @@
 //imports
 import { displayError } from './errorHandling.js';
 import { sendWarningToExtUser } from './handleTwitchChatMessages.js';
-import { getOAuthClientID } from './handleTwitchChatMessages.js';
-
+import { setTwitchAccessToken } from './handlePreferences.js';
 
 
 // Variables for Twitch, Perspective, and Netlify API
@@ -41,7 +40,7 @@ chrome.storage.sync.get('twitchAccessToken', function(data) {
     // If no Twitch Access Token is found in Chrome storage, try to get one from the cookies
     chrome.cookies.get({
         url: 'https://www.twitch.tv',
-        name: 'accessToken'
+        name: 'twitchAccessToken'
         }, function(cookie) {
         if (cookie) {
             console.log('Twitch Access Token found in cookies:', cookie.value);
@@ -70,7 +69,8 @@ chrome.runtime.onMessage.addListener(function(request,sendResponse) {
     if (request.type === 'checkTwitchLogin') {
         checkTwitchLogin(sendResponse);
         return true; // Needed to make the sendResponse asynchronous
-    } else if (request.type === 'twitchLogin') {
+        
+      } else if (request.type === 'twitchLogin') {
         twitchLogin(sendResponse);
         return true; // Needed to make the sendResponse asynchronous
     } else if (request.type === 'twitchLogout') {
@@ -108,17 +108,17 @@ function twitchLogout(sendResponse) {
 }
 
 // Function to check if the user is logged in to Twitch
-function checkTwitchLogin(sendResponse) {
+export async function checkTwitchLogin(sendResponse) {
     chrome.storage.sync.get(['twitchAccessToken'], function(data) {
       if (chrome.runtime.lastError) {
         console.error('Error loading Twitch access token:', chrome.runtime.lastError);
-        sendResponse({ loggedIn: false });
+        sendResponse(false);
         return;
       }
       const twitchAccessToken = data.twitchAccessToken;
       if (!twitchAccessToken) {
         //console.error('Error: Twitch access token not found');
-        sendResponse({ loggedIn: false });
+        sendResponse(false);
         return;
       }
       // Decrypt the access token using the encryption key
@@ -131,14 +131,14 @@ function checkTwitchLogin(sendResponse) {
         const encryptionKey = data.encryptionKey;
         if (!encryptionKey) {
           console.error('Error: Encryption key not found');
-          sendResponse({ loggedIn: false });
+          sendResponse(false);
           return;
         }
-        const accessToken = decrypt(twitchAccessToken, encryptionKey);
+        const twitchAccessToken = decrypt(twitchAccessToken, encryptionKey);
         // Check if the access token is still valid
         fetch('https://id.twitch.tv/oauth2/validate', {
           headers: {
-            'Authorization': `OAuth ${accessToken}`
+            'Authorization': `OAuth ${twitchAccessToken}`
           }
         }).then(response => {
           if (response.status === 401) {
@@ -149,10 +149,10 @@ function checkTwitchLogin(sendResponse) {
                 sendResponse({ error: 'Error removing Twitch access token: ' + chrome.runtime.lastError.message, loggedIn: false });
                 return;
               }
-              sendResponse({ loggedIn: false });
+              sendResponse(false);
             });
           } else {
-            sendResponse({ loggedIn: true });
+            sendResponse(true);
           }
         }).catch(error => {
           console.error('Error validating Twitch access token:', error);
@@ -183,7 +183,7 @@ async function initiateTwitchOAuth(clientId) {
         const data = await response.json();
         const encryptedAccessToken = data.access_token;
         // Store the encrypted access token in storage
-        chrome.storage.sync.set(['accessToken'], function() {
+        chrome.storage.sync.set(['twitchAccessToken'], function() {
             if (chrome.runtime.lastError) {
                 console.error('Error setting Twitch access token:', chrome.runtime.lastError);
                 sendResponse({ error: 'Error setting Twitch access token: ' + chrome.runtime.lastError.message, loggedIn: false });
@@ -201,21 +201,13 @@ async function initiateTwitchOAuth(clientId) {
           sendResponse({ error: 'Error getting Twitch access token: ' + error.message, loggedIn: false });
       }
   }
-    
-  
-
-        
-
-
-
-
 
 
   //Store the access token securely in Chrome's sync storage
   export function storeInCookies(encryptedAccessToken){
     chrome.cookies.set({
     url: 'https://www.twitch.tv',
-    name: 'accessToken',
+    name: 'twitchaccessToken',
     value: encryptedAccessToken,
     secure: true,
     httpOnly: true
