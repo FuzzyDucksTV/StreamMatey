@@ -1,5 +1,5 @@
 // Function to analyze a chat message for toxicity
-function analyzeSentiment(message) {
+export function analyzeSentiment(message) {
     const url = `https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze?key=${OAUTH_CLIENT_ID}`;
     const data = {
       comment: { text: message },
@@ -20,3 +20,5 @@ function analyzeSentiment(message) {
       .catch(error => reject(error));
     });
   }
+
+  

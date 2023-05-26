@@ -1,8 +1,15 @@
 // Description: Functions to handle Netlify API calls
 //
 
+// Imports
+import { encrypt } from './handleEncryption.js';
+import { getAccessToken } from './handleTwitchChatMessages.js';
+import { displayError } from './errorHandling.js';
+import { storeInCookies } from './handleTwitchLoginLogout.js'; 
+
+
 // Function declaration statement
-function getNetlifyFunctionUrl() {
+export function getNetlifyFunctionUrl() {
     // Replace `chrome.runtime.getManifest()` with the URL of the Twitch OAuth function
     const netlifyFunctionUrl = "https://myfunction.netlify.app/.netlify/functions/twitchOAuth";
     if (!netlifyFunctionUrl) {
@@ -14,14 +21,20 @@ function getNetlifyFunctionUrl() {
   }
 
 // Function to get the Twitch access token from the Twitch OAuth function
-async function getTwitchAccessToken(clientId) {
+export async function getTwitchAccessToken(clientId) {
     try {
         //Get access token from netlify function
         const netlifyFunctionUrl = await getNetlifyFunctionUrl();
-        const response = await axios.get(netlifyFunctionUrl + '/twitch-oauth' + '?client_id=' + clientId);
-        if (response.status !== 200) {
-            throw new Error(`Error initiating Twitch OAuth: HTTP ${response.status}`);
+        const response = await jQuery.ajax({
+            url: netlifyFunctionUrl,
+            type: 'GET',
+            data: { clientId: clientId },
+            dataType: 'json'
+        });
+        if (!response) {
+            throw new Error('Error initiating Twitch OAuth: No response received');
         }
+
         const accessToken = response.data.access_token;
         if (!accessToken) {
             throw new Error('Error initiating Twitch OAuth: No access token returned');
@@ -56,19 +69,3 @@ async function getTwitchAccessToken(clientId) {
     }
 }
 
-// Function to display error messages
-function displayError(message) {
-    console.error(message);
-    // You can also display the error message to the user in some way
-    
-    // Send a notification to the user
-    chrome.notifications.create(
-        'errorNotification',
-        {
-            type: 'basic',
-            iconUrl: 'icon.png',
-            title: 'Twitch Chat Filter',
-            message: message
-        }
-        );
-  }

@@ -1,6 +1,12 @@
+//imports
+import { displayError } from './errorHandling.js';
 
+// Variables for encryption
+let encryptionKey = null;
+
+// Check if the encryption key exists
 // Function to check if the encryption key exists
-function checkEncryptionKeyExists() {
+export function checkEncryptionKeyExists() {
     chrome.storage.sync.get(['encryptionKey'], data => {
       if (!data.encryptionKey) {
         generateNewEncryptionKey(); // Generate a new encryption key if it doesn't exist
@@ -24,7 +30,11 @@ function checkEncryptionKeyExists() {
       }
     });
   }
-  
+//return the encrypted access token
+  export async function GetencryptedAccessToken(accessToken, encryptionKey) {
+    return encrypt(accessToken, encryptionKey);
+  }
+
   // Function to generate a new encryption key
   function generateNewEncryptionKey() {
     window.crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"])
@@ -48,7 +58,7 @@ function buf2hex(buffer) {
   }
   
   // Encryption function
-  async function encrypt(data, jwk) {
+  export async function encrypt(data, jwk) {
     // Import the JWK back to a CryptoKey
     const key = await window.crypto.subtle.importKey('jwk', jwk, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
   
@@ -74,7 +84,7 @@ function buf2hex(buffer) {
     }
   }
   
-  async function decrypt(data, jwk) {
+  export async function decrypt(data, jwk) {
     // Import the JWK back to a CryptoKey
     const key = await window.crypto.subtle.importKey('jwk', jwk, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
   

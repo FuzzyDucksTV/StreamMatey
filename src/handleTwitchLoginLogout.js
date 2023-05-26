@@ -1,26 +1,18 @@
 //Handle  the login and logout of the user
 // Path: src\handleTwitchLoginLogout.js
-const netlifyfunctions = require('handleNetlifyAPI.js');
-const encryption = require('handleEncryption.js');
+//imports
+import { displayError } from './errorHandling.js';
+import { sendWarningToExtUser } from './handleTwitchChatMessages.js';
+import { getOAuthClientID } from './handleTwitchChatMessages.js';
 
 
 
 // Variables for Twitch, Perspective, and Netlify API
 let twitchRefreshToken = '';
 let netlifyFunctionUrl = 'YOUR_NETLIFY_FUNCTION_URL'; // Add your Netlify function URL here
-let twitchClientId = 'YOUR_TWITCH_CLIENT_ID';
+const twitchClientId = 'YOUR_TWITCH_CLIENT_ID';
 let twitchAccessToken = '';
 
-
-// Function to send a warning to the extension user
-function sendWarningToExtUser(message) {
-  chrome.notifications.create({
-      type: 'basic',
-      iconUrl: 'icon.png',
-      title: 'StreamMatey Warning',
-      message: message
-  });
-  }
 
 
 
@@ -177,48 +169,38 @@ function checkTwitchLogin(sendResponse) {
     
 async function initiateTwitchOAuth(clientId) {
     try {
-        // Get the URL of the Twitch OAuth function
-        const twitchAccessToken = await netlifyfunctions.getTwitchAccessToken(clientId);
-        console.log('Twitch Access Token:', twitchAccessToken);
-        // Get the encryption key from storage
-        chrome.storage.sync.get(['encryptionKey'], function(data) {
+        // twitch access token using a netlify function
+        const response = await fetch('https://twitch-oauth.netlify.app/.netlify/functions/twitch-oauth', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ clientId: clientId })
+        });
+        if (!response.ok) {
+            throw new Error('Error getting Twitch access token: ' + response.statusText);
+        }
+        const data = await response.json();
+        const encryptedAccessToken = data.access_token;
+        // Store the encrypted access token in storage
+        chrome.storage.sync.set(['accessToken'], function() {
             if (chrome.runtime.lastError) {
-              console.error('Error loading encryption key:', chrome.runtime.lastError);
-              displayError('Error loading encryption key: ' + chrome.runtime.lastError.message);
-              return;
-            }
-            const encryptionKey = data.encryptionKey;
-            if (!encryptionKey) {
-              console.error('Error: Encryption key not found');
-              displayError('Error: Encryption key not found');
-              return;
-            }
-            //encrypt the access token using the encryption key
-            const encryptedAccessToken = encryption.encryptedAccessToken(twitchAccessToken, encryptionKey);
-            // Store the access token securely in Chrome's sync storage
-            chrome.storage.sync.set({ 'twitchAccessToken': encryptedAccessToken }, function() {
-              if (chrome.runtime.lastError) {
-
                 console.error('Error setting Twitch access token:', chrome.runtime.lastError);
-                displayError('Error setting Twitch access token: ' + chrome.runtime.lastError.message);
+                sendResponse({ error: 'Error setting Twitch access token: ' + chrome.runtime.lastError.message, loggedIn: false });
                 return;
-              } 
-  
-
-              const encryptedAccessToken = encryption.encryptedAccessToken(twitchAccessToken, encryptionKey);
+            }
               storeInCookies(encryptedAccessToken);
               // Send a message to the content script to reload the page
               chrome.tabs.sendMessage(sender.tab.id, { type: 'reloadPage' });
               // Send a response
               sendResponse({ loggedIn: true });
             });
-          });
         } catch (error) {
           console.error('Error getting Twitch access token:', error);
           displayError('Error getting Twitch access token: ' + error.message);
           sendResponse({ error: 'Error getting Twitch access token: ' + error.message, loggedIn: false });
-        }
       }
+  }
     
   
 
@@ -230,7 +212,7 @@ async function initiateTwitchOAuth(clientId) {
 
 
   //Store the access token securely in Chrome's sync storage
-  function storeInCookies(encryptedAccessToken){
+  export function storeInCookies(encryptedAccessToken){
     chrome.cookies.set({
     url: 'https://www.twitch.tv',
     name: 'accessToken',
