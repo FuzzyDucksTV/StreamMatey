@@ -3,13 +3,6 @@ import { analyzeToxicity } from './handleToxicityAnalysis.js';
 import { decrypt } from './handleEncryption.js';
 import { displayError } from './errorHandling.js';
 
-//Variables
-const customMessageMods = getCustomMessageMods();
-const customMessageToUser = getCustomMessageToUser();
-const customMessageToxicityThreshold = getCustomMessageToxicityThreshold();
-const customMessageSentimentThreshold = getCustomMessageSentimentThreshold();
-
-
 function getCustomMessageMods() {
     return new Promise((resolve, reject) => {
         chrome.storage.sync.get(['customMessageMods'], function(data) {
@@ -59,36 +52,43 @@ function getCustomMessageSentimentThreshold() {
 }
 
 
+// Function to check if the user is logged in
 
+function checkIfUserIsLoggedIn() {
+    return new Promise((resolve, reject) => {
+        chrome.storage.sync.get(['twitchAccessToken'], function(data) {
+            if (chrome.runtime.lastError) {
+                reject(chrome.runtime.lastError);
+            } else {
+                resolve(data.userIsLoggedIn);
+            }
+        });
+    });
+}
+function getTheTwitchClientIDfromStorage() {
+    return new Promise((resolve, reject) => {
+        chrome.storage.sync.get(['twitchClientId'], function(data) {
+            if (chrome.runtime.lastError) {
+                reject(chrome.runtime.lastError);
+            } else {
+                resolve(data.twitchClientId);
+            }
+        });
+    });
+}
 // Function to monitor Twitch chat
 // Start monitoring Twitch chat when the extension is installed or updated and the user is logged in, and stop monitoring Twitch chat when the user is logged out.
-       // Also, make sure the user is currently streaming before monitoring Twitch chat.
-     export async function monitorTwitchChat() {
-    streamIsLive = await checkIfStreamIsLive();
-    //check if the user is streaming
-    if (streamIsLive) {
+// Also, make sure the user is currently streaming before monitoring Twitch chat.
+export const monitorTwitchChat = async () => {
+
+    let userIsLoggedIn = await checkIfUserIsLoggedIn();
+    let streamIsLive = await checkIfStreamIsLive();
+    let monitorStarted = false;
+    if (streamIsLive && userIsLoggedIn && (data.twitchAccessToken.length > 0 && data.encryptionKey.length > 0) && !monitorStarted) {
         try {
-            // Get the Twitch client ID from Chrome's sync storage
-            chrome.storage.sync.get(['twitchClientId'], function(data) {
-                if (chrome.runtime.lastError) {
-                    console.error('Error loading Twitch client ID:', chrome.runtime.lastError);
-                    displayError('Error loading Twitch client ID: ' + chrome.runtime.lastError.message);
-                    return;
-                }
-                const twitchClientId = data.twitchClientId;
-                if (!twitchClientId) {
-                    console.error('Error: Twitch client ID not found');
-                    displayError('Error: Twitch client ID not found');
-                    return;
-                }
-            });
-        // Get the encrypted Twitch access token and encryption key from Chrome's sync storage
-        chrome.storage.sync.get(['twitchAccessToken', 'encryptionKey'], async function(data) {
-            if (chrome.runtime.lastError) {
-            console.error('Error loading Twitch access token or encryption key:', chrome.runtime.lastError);
-            displayError('Error loading Twitch access token or encryption key: ' + chrome.runtime.lastError.message);
-            return;
-            }
+            getTheTwitchClientIDfromStorage().Promise.resolve(data.twitchAccessToken);
+            getTheEncryptedTwitchAccessTokenfromStorage().Promise.resolve(data.twitchAccessToken);
+            //check if the user is logged in
             const encryptedAccessToken = data.twitchAccessToken;
             const encryptionKey = data.encryptionKey;
             if (!encryptedAccessToken || !encryptionKey) {
@@ -108,24 +108,43 @@ function getCustomMessageSentimentThreshold() {
             identity: { username: channel, password: `oauth:${twitchAccessToken}` },
             channels: [channel]
             };
-            const client = new tmi.client(options);
+            const client = setClient(options);
             // Connect to the Twitch chat
             client.connect();
-            // Listen for chat messages
-            client.on('message', handleChatMessage);
-
-
-
-        });
+            setClientOnEventHandlers(client);
+            console.log('Monitor started');
+            
         } catch (error) {
-        console.error('Error monitoring Twitch chat:', error);
-        sendWarningToExtUser('Error monitoring Twitch chat: ' + error.message);
+            console.error(error);
+            displayError(error);
+            return;
         }
-  }
+    }
+};
+        
+function setClient(options) {
+    return new tmi.client(options);
 }
+
+     //function to set the client on event handlers
+        function setClientOnEventHandlers(client) {
+            client.on('connected', onConnectedHandler);
+            client.on('disconnected', onDisconnectedHandler);
+            client.on('message', handleChatMessage);
+            client.on('cheer', handleCheerHandler);
+            client.on('giftpaidupgrade', handleGiftPaidUpgradeHandler);
+            client.on('subgift', handleSubGiftHandler);
+            client.on('submysterygift', handleSubMysteryGiftHandler);
+            client.on('subscription', handleSubscriptionHandler);
+            client.on('primepaidupgrade', handlePrimePaidUpgradeHandler);
+            client.on('rewardgift', handleRewardGiftHandler);
+        }
+      
+
+
 // add event listeners to monitor Twitch chat when the extension is installed or updated and the user is logged in, and stop monitoring Twitch chat when the user is logged out
 chrome.runtime.onStartup.addListener(monitorTwitchChat);
-chrome.storage.onChanged.addListener(function(changes, namespace) {
+chrome.storage.onChanged.addListener(function(changes) {
     if (changes.twitchAccessToken && changes.twitchAccessToken.newValue) {
         monitorTwitchChat();
     }
@@ -145,6 +164,21 @@ client.on('primepaidupgrade', onPrimePaidUpgradeHandler);
 client.on('rewardgift', onRewardGiftHandler);
 client.on('ritual', onRitualHandler);
 client.on('bitsbadgetier', onBitsBadgeTierHandler);
+
+function getTheTwitchClientIDfromStorage() {
+    chrome.storage.sync.get(['twitchClientId'], function (data) {
+        if (chrome.runtime.lastError) {
+            console.error('Error loading Twitch client ID:', chrome.runtime.lastError);
+            displayError('Error loading Twitch client ID: ' + chrome.runtime.lastError.message);
+            return;
+        }
+        let twitchClientId = data.twitchClientId;
+        if (!twitchClientId) {
+            console.error('Error: Twitch client ID not found');
+            displayError('Error: Twitch client ID not found');
+        }
+    });
+}
 
 //function for ondisconnectedhandler
 function onDisconnectedHandler(reason) {
@@ -469,16 +503,6 @@ async function getUserIdFromStorage() {
 
 
 //function to get the userid
-async function getUserId (channel, twitchClientId) {
-    // Get the current Twitch channel's user ID
-    const response = await fetch(`https://api.twitch.tv/helix/users?login=${channel}`, {
-        headers: {
-            'Client-ID': twitchClientId
-        }
-    });
-    const data = await response.json();
-    return data.data[0].id;
-}
 
 // Function to handle Twitch chat messages
 async function handleChatMessage (channel, userstate, message, self) {
@@ -537,7 +561,7 @@ async function handleChatMessage (channel, userstate, message, self) {
     }
   }
   
-  const handleSentimentScore = (sentimentScore, username) => {
+  const handleSentimentScore = (sentimentScore) => {
     if (sentimentScore < sentimentOptions.threshold) {
         //takeAction(username);
     }
@@ -666,56 +690,11 @@ export function getToxicityScoreStored(sendResponse) {
 }
 
 // Function to get the sentiment threshold from storage
-function getSentimentThresholdStored(sendResponse) {
-    chrome.storage.sync.get('sentimentThreshold', data => {
-        let sentimentThreshold = data.sentimentThreshold;
-        if (!sentimentThreshold) {
-            sentimentThreshold = 0;
-        }
-        sendResponse({threshold: sentimentThreshold});
-    });
-}
 
 // Function to get the toxicity threshold from storage
-function getToxicityThresholdStored(sendResponse) {
-    chrome.storage.sync.get('toxicityThreshold', data => {
-        let toxicityThreshold = data.toxicityThreshold;
-        if (!toxicityThreshold) {
-            toxicityThreshold = 0;
-        }
-        sendResponse({threshold: toxicityThreshold});
-    });
-}
 
 // Function to get the custom message for toxic users from storage
-function getCustomMessageToxicStored(sendResponse) {
-    chrome.storage.sync.get('customMessageToxic', data => {
-        let customMessageToxic = data.customMessageToxic;
-        if (!customMessageToxic) {
-            customMessageToxic = 0;
-        }
-        sendResponse({message: customMessageToxic});
-    });
-}
 
 // Function to get the custom message for mods from storage
-function getCustomMessageModsStored(sendResponse) {
-    chrome.storage.sync.get('customMessageMods', data => {
-        let customMessageMods = data.customMessageMods;
-        if (!customMessageMods) {
-            customMessageMods = 0;
-        }
-        sendResponse({message: customMessageMods});
-    });
-}
 
 // Function to get the custom message for extention users from storage
-function getCustomMessageExtStored(sendResponse) {
-    chrome.storage.sync.get('customMessageExt', data => {
-        let customMessageExt = data.customMessageExt;
-        if (!customMessageExt) {
-            customMessageExt = 0;
-        }
-        sendResponse({message: customMessageExt});
-    });
-}

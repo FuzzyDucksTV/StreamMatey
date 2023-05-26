@@ -7,14 +7,7 @@ const $ = jQuery;
 // Global variables
 let client;
 let preferences;
-let chatHistory;
 let encryptionKey;
-let sentimentScore;
-let toxicityScore;
-let sentimentAnalysisOptions;
-let toxicityDetectionOptions;
-let twitchAccessToken;
-
 
 // Perspective API variables
 const perspectiveApiUrl = 'https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze?key=';
@@ -25,10 +18,9 @@ const netlifyFunctionUrl = 'https://myfunction.netlify.app/.netlify/functions/tw
 
 //imports
 
-import { getPreferences, savePreferences, getDefaultPreferences } from './handlePreferences.js';
+import { getPreferences, savePreferences, setDefaultPreferences } from './handlePreferences.js';
 import { getEncryptionKey } from './handleEncryption.js';
 import { monitorTwitchChat } from './handleTwitchChatMessages.js';
-import { setDefaultPreferences } from './handlePreferences.js';
 import { handleStorageChanges } from './handleChromeStorageChanges.js';
 import { handleMessages } from './handleBackgroundMessages.js';
 
@@ -48,31 +40,10 @@ async function init() {
         encryptionKey = getEncryptionKey();
 
     }
-
-    // Initialize the client
-    client = new tmi.Client({
-        connection: {
-            secure: true,
-            reconnect: true
-        },
-        channels: [preferences.twitchChannel]
-    });
-
-    // Register our event handlers (defined below)
-    //client.on('message', handleTwitchChatMessages.handleTwitchChatMessages);  // Handle incoming chat messages
-    //client.on('connected', handleTwitchLoginLogout.onConnectedHandler);  // Handle successful connection  
-    //client.on('disconnected', handleTwitchLoginLogout.onDisconnectedHandler);  // Handle disconnection  
-    //client.on('reconnect', handleTwitchLoginLogout.onReconnectHandler);  // Handle reconnection
-    //client.on('join', handleTwitchLoginLogout.onJoinHandler);  // Handle joining a channel
-    //client.on('part', handleTwitchLoginLogout.onPartHandler);  // Handle leaving a channel
-
-    // Connect to Twitch
-    client.connect();
-
 }
 
 // Initialize the extension
-init();
+await init();
 
 // Open options page when extension icon is clicked
 chrome.action.onClicked.addListener(() => chrome.tabs.create({url: 'options.html'}));

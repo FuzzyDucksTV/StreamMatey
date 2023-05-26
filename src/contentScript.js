@@ -50,87 +50,102 @@ function setPreferenceVariables() {
   });
 }
 
+// Function to get the sentiment score from background.js
+function SentimentAnalysis(request) {
+  if (enableSentimentAnalysis) {
+    sentimentScore = getSentimentScore(request.text);
+    updateSentimentMeter(sentimentScore);
+  }
+}
+
+// Function to get the toxicity score from background.js
+function ToxicityDetection(request) {
+  if (enableToxicityDetection) {
+    toxicityScore = getToxicityScore(request.text);
+    updateToxicityMeter(toxicityScore);
+  }
+}
+
+// Function to get the sentiment score from background.js
+function updateSentimentScore(request) {
+  sentimentScore =  request.SentimentScore;
+  //check if the sentiment score is a number
+  if (isNaN(sentimentScore)) {
+    //if the sentiment score is not a number, set the sentiment score to 0
+    sentimentScore = 0;
+  } else {
+    //if the sentiment score is a number, round the sentiment score to 2 decimal places
+    sentimentScore = Math.round(sentimentScore * 100) / 100;
+    //update the sentiment score in the HTML
+    document.getElementById('sentimentScore').innerHTML = sentimentScore;
+    //update the sentiment giger-meter in the HTML
+    document.getElementById('gigerMeter').style.width = `${sentimentScore * 100}%`;
+    
+  }
+}
 // Function to handle incoming messages
 async function handleMessage(request, sender, sendResponse) {
   try {
     switch (request.type) {
       case 'sentimentAnalysis':
-        if (enableSentimentAnalysis) {
-          sentimentScore = await getSentimentScore(request.text);
-          updateSentimentMeter(sentimentScore);
-        }
+        SentimentAnalysis(request.text)
         break;
       case 'toxicityDetection':
         if (enableToxicityDetection) {
           toxicityScore = await getToxicityScore(request.text);
           updateToxicityMeter(toxicityScore);
-          
         }
         break;
       case 'updateLeaderboard':
         updateLeaderboard(request);
         break;
-      case 'sentimentAnalysisOptions':
-        sentimentOptions = request.options;
-
-        break;
-      case 'toxicityDetectionOptions':
-        toxicityOptions = request.options;
-        break;
       case 'updateSentimentScore':
-        sentimentScore =  request.SentimentScore;
-        //check if the sentiment score is a number
-        if (isNaN(sentimentScore)) {
-          //if the sentiment score is not a number, set the sentiment score to 0
-          sentimentScore = 0;
-        } else {
-          //if the sentiment score is a number, round the sentiment score to 2 decimal places
-          sentimentScore = Math.round(sentimentScore * 100) / 100;
-          //update the sentiment score in the HTML
-          document.getElementById('sentimentScore').innerHTML = sentimentScore;
-          //update the sentiment giger-meter in the HTML
-          document.getElementById('gigerMeter').style.width = `${sentimentScore * 100}%`;
-          
-        }
+        updateSentimentScore(request);
         break;
       case 'updateToxicityScore':
-        toxicityScore = request.ToxicityScore;
-        //check if the toxicity score is a number
-        if (isNaN(toxicityScore)) {
-          //if the toxicity score is not a number, set the toxicity score to 0
-          toxicityScore = 0;
-        } else {
-          //if the toxicity score is a number, round the toxicity score to 2 decimal places
-          toxicityScore = Math.round(toxicityScore * 100) / 100;
-          //update the toxicity score in the HTML
-          document.getElementById('toxicityScore').innerHTML = toxicityScore;
-          //update the toxicity giger-meter in the HTML
-          document.getElementById('toxicityMeter').style.width = `${toxicityScore * 100}%`;
-        }
-      default:
-        console.error('Error: Invalid message type received');
-        sendWarningToExtUser('Error: Invalid message type received');
+         updateToxicityScore(request);
         break;
+        default:
+          sendWarningToExtUser('Error: Unknown message type');
+          break;
     }
-  }
-  catch (error) {
+    return true; // Indicate that the response will be sent asynchronously
+ } catch (error) {
     console.error('Error:', error);
     sendWarningToExtUser('Error: ' + error.message);
   }
-
-  sendResponse({}); // Send an empty response to the sender
+  return true; // Indicate that the response will be sent asynchronously
+  //return true; // Indicate that the response will be sent asynchronously
 }
 
-setPreferenceVariables();
-// Listen for messages from the background script
-chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.type === 'updatePreferences') {
-    setPreferenceVariables();
-  } else {
-    handleMessage(request, sender, sendResponse); // Handle other actions
+function updateToxicityScore(request) {
+  toxicityScore = request.ToxicityScore;
+  //check if the toxicity score is a number
+  isToxicityScoreNan(toxicityScore);
+  setPreferenceVariables();
+  // Listen for messages from the background script
+  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.type === 'updatePreferences') {
+      setPreferenceVariables();
+      return true; // Indicate that the response will be sent asynchronously
+    } 
+  });
   }
-  return true; // Indicate that the response will be sent asynchronously
-});
+
+  function isToxicityScoreNan(toxicityScore) {
+    if (isNaN(toxicityScore)) {
+      //if the toxicity score is not a number, set the toxicity score to 0
+      toxicityScore = 0.1;
+    }
+      //if the toxicity score is a number, round the toxicity score to 2 decimal places
+      toxicityScore = Math.round(toxicityScore * 100) / 100;
+      //update the toxicity score in the HTML
+      document.getElementById('toxicityScore').innerHTML = toxicityScore;
+      //update the toxicity giger-meter in the HTML
+      document.getElementById('toxicityMeter').style.width = `${toxicityScore * 100}%`;
+    
+    return toxicityScore;
+  }
 
 //function to update the sentiment meter
 function updateSentimentMeter(sentimentScore) {
@@ -147,85 +162,6 @@ function updateToxicityMeter(toxicityScore) {
   // Update the toxicity meter
   if (toxicityScore !== null) {
     toxicityMeter.style.width = `${toxicityScore * 100}%`;
-  }
-}
-
-//function to update the leaderboard
-function updateLeaderboard(text) {
-  //get the leaderboard items
-  let leaderboardItems = document.getElementById('leaderboard').getElementsByTagName('li');
-  //get the leaderboard items text
-  let leaderboardItemsText = [];
-  for (let i = 0; i < leaderboardItems.length; i++) {
-    leaderboardItemsText.push(leaderboardItems[i].innerHTML);
-  }
-  //get the leaderboard items names
-  let leaderboardItemsNames = [];
-
-  //get the leaderboard items names and scores
-  let leaderboardItemsNamesAndScores = [];
-  for (let i = 0; i < leaderboardItemsText.length; i++) {
-    leaderboardItemsNamesAndScores.push(leaderboardItemsText[i].split(' '));
-  }
-  //get the leaderboard items names and scores sorted by score
-  let leaderboardItemsNamesAndScoresSortedByScore = leaderboardItemsNamesAndScores.sort(function(a, b) {
-    return b[1] - a[1];
-  });
-
-  //get the sentiment score
-  let sentimentScore = text.sentimentScore;
-  //get the name
-  let name = text.name;
-  //get the name and score
-  let nameAndScore = [name, sentimentScore];
-  //get the name and score sorted by score
-  let nameAndScoreSortedByScore = [name, sentimentScore].sort(function(a, b) {
-    return b[1] - a[1];
-  });
-
-    //get the toxicity score
-    let toxicityScore = text.toxicityScore;
-    //get the name
-    //get the name and score
-    let nameAndToxicScore = [name, toxicityScore];
-    //get the name and score sorted by score
-    let nameAndToxicScoreSortedByScore = [name, toxicityScore].sort(function(a, b) {
-      return b[1] - a[1];
-    });
-
-
-
-  //if the leaderboard is empty
-  if (leaderboardItemsText.length == 0) {
-    //add the name and score to the leaderboard
-    let li = document.createElement('li');
-    li.appendChild(document.createTextNode(name + ' ' + sentimentScore));
-
-    leaderboard.appendChild(li);
-  }
-  //if the leaderboard is not empty
-  else {
-    //if the leaderboard is not full
-    if (leaderboardItemsText.length < 3) {
-      //add the name and score to the leaderboard
-      let li = document.createElement('li');
-      li.appendChild(document.createTextNode(name + ' ' + sentimentScore));
-
-      leaderboard.appendChild(li);
-    }
-    //if the leaderboard is full
-    else {
-      //if the name and score is greater than the lowest score on the leaderboard
-      if (nameAndScoreSortedByScore[1] > leaderboardItemsNamesAndScoresSortedByScore[2][1]) {
-        //remove the lowest score on the leaderboard
-        leaderboard.removeChild(leaderboardItems[2]);
-        //add the name and score to the leaderboard
-        let li = document.createElement('li');
-        li.appendChild(document.createTextNode(name + ' ' + sentimentScore));
-
-        leaderboard.appendChild(li);
-      }
-    }
   }
 }
 

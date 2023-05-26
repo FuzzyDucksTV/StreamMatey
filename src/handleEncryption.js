@@ -108,3 +108,19 @@ function buf2hex(buffer) {
         throw err; // Propagate the error
     }
   }
+
+  // Function to get the encryption key
+  export function getEncryptionKey() {
+    //get the encryption key from chrome's storage
+    chrome.storage.sync.get(['encryptionKey'], data => {
+      if (data.encryptionKey) {
+        return data.encryptionKey;
+      } else {
+        generateNewEncryptionKey(); // Generate a new encryption key if it doesn't exist
+        
+        return data.encryptionKey;
+      }
+    });
+  }
+
+
