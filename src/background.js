@@ -25,9 +25,9 @@ const netlifyFunctionUrl = 'https://myfunction.netlify.app/.netlify/functions/tw
 
 //imports
 
-import { getPreferences, setPreferences, getDefaultPreferences, getEncryptionKey, setEncryptionKey } from './handlePreferences.js';
-import { handleTwitchChatMessages, monitorTwitchChat } from './handleTwitchChatMessages.js';
-import { getTwitchAccessToken ,setTwitchAccessToken, handleTwitchLoginLogout} from './handleTwitchLoginLogout.js';
+import { getPreferences, savePreferences, getDefaultPreferences } from './handlePreferences.js';
+import { getEncryptionKey } from './handleEncryption.js';
+import { monitorTwitchChat } from './handleTwitchChatMessages.js';
 import { setDefaultPreferences } from './handlePreferences.js';
 import { handleStorageChanges } from './handleChromeStorageChanges.js';
 import { handleMessages } from './handleBackgroundMessages.js';
@@ -42,7 +42,7 @@ async function init() {
       // If no preferences are found, set the default preferences
       setDefaultPreferences()();
       preferences = getPreferences();
-      await setPreferences(preferences);
+      savePreferences(preferences);
     } else {
         // If preferences are found, set the encryption key
         encryptionKey = getEncryptionKey();

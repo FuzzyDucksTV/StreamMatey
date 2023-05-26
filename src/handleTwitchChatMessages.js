@@ -124,7 +124,6 @@ function getCustomMessageSentimentThreshold() {
   }
 }
 // add event listeners to monitor Twitch chat when the extension is installed or updated and the user is logged in, and stop monitoring Twitch chat when the user is logged out
-chrome.runtime.onInstalled.addListener(monitorTwitchChat);
 chrome.runtime.onStartup.addListener(monitorTwitchChat);
 chrome.storage.onChanged.addListener(function(changes, namespace) {
     if (changes.twitchAccessToken && changes.twitchAccessToken.newValue) {
@@ -132,22 +131,13 @@ chrome.storage.onChanged.addListener(function(changes, namespace) {
     }
 });
 
+
+
 //add event listeners for client
 client.on('connected', onConnectedHandler);
 client.on('disconnected', onDisconnectedHandler);
-client.on('reconnect', onReconnectHandler);
-client.on('join', onJoinHandler);
-client.on('part', onPartHandler);
-client.on('message', onMessageHandler);
-client.on('messagedeleted', onMessageDeletedHandler);
-client.on('timeout', onTimeoutHandler);
-client.on('ban', onBanHandler);
 client.on('cheer', onCheerHandler);
 client.on('giftpaidupgrade', onGiftPaidUpgradeHandler);
-client.on('hosted', onHostedHandler);
-client.on('hosting', onHostingHandler);
-client.on('raided', onRaidedHandler);
-client.on('resub', onResubHandler);
 client.on('subgift', onSubGiftHandler);
 client.on('submysterygift', onSubMysteryGiftHandler);
 client.on('subscription', onSubscriptionHandler);
@@ -155,6 +145,13 @@ client.on('primepaidupgrade', onPrimePaidUpgradeHandler);
 client.on('rewardgift', onRewardGiftHandler);
 client.on('ritual', onRitualHandler);
 client.on('bitsbadgetier', onBitsBadgeTierHandler);
+
+//function for ondisconnectedhandler
+function onDisconnectedHandler(reason) {
+    console.log(`Disconnected: ${reason}`);
+    sendWarningToExtUser('Disconnected: ' + reason);
+}
+
 
 
 //Function for oncheerhandler
@@ -484,7 +481,7 @@ async function getUserId (channel, twitchClientId) {
 }
 
 // Function to handle Twitch chat messages
-const handleChatMessage = async (channel, userstate, message, self) => {
+async function handleChatMessage (channel, userstate, message, self) {
     // Ignore messages from the bot itself
     if (self) return;
   
@@ -722,4 +719,3 @@ function getCustomMessageExtStored(sendResponse) {
         sendResponse({message: customMessageExt});
     });
 }
-chrome.runtime.onInstalled.addListener(monitorTwitchChat);
