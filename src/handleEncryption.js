@@ -120,7 +120,7 @@ function generateNewEncryptionKey() {
     }
   });
 }
-async function getEncryptionKey() {
+export async function getEncryptionKey() {
   //Get encryption key from Netlify api function
   return new Promise((resolve, reject) => {
       const url = getNetlifyFunctionUrl('getEncryptionKey');

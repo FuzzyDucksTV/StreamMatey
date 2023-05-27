@@ -1,7 +1,6 @@
 //imports
-import { checkTwitchLogin, initiateTwitchOAuth } from './handleTwitchLoginLogout';
+import { checkTwitchLogin, initiateTwitchOAuth, removeTwitchAccessToken} from './handleTwitchLoginLogout';
 import { getPreferences, savePreferences } from './handlePreferences.js';
-import { removeTwitchAccessToken } from './handleTwitchLoginLogout.js';
 
 
 // Function to handle messages from the content script

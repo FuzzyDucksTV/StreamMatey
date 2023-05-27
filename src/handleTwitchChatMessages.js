@@ -626,17 +626,3 @@ export function getToxicityScoreStored(sendResponse) {
     });
 }
 
-export async function removeTwitchAccessToken(sendResponse) {
-    // Remove the access token from storage
-    chrome.storage.sync.remove(['twitchAccessToken'], function() {
-        if (chrome.runtime.lastError) {
-            console.error('Error removing access token:', chrome.runtime.lastError);
-            sendResponse({ error: 'Error removing access token: ' + chrome.runtime.lastError.message });
-            return;
-        }
-        // Send a message to the content script to reload the page
-        chrome.tabs.sendMessage(sender.tab.id, { type: 'reloadPage' });
-        // Send a response
-        sendResponse({});
-    });
-  }

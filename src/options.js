@@ -45,88 +45,86 @@ document.addEventListener('DOMContentLoaded', (event) => {
         , 5000);
     }
 
-// Function to load preferences
-function loadPreferences() {
-    chrome.runtime.sendMessage({type: 'loadPreferences'}, function(response) {
-        if (response.error) {
-            console.error('Error loading preferences:', response.error);
-            displayError('Error loading preferences: ' + response.error);
-        }
-        const preferences = response.preferences;
-        if (preferences)
-        {
+    const loadPreferences = () => {
+        //Send a message to the background script to load the preferences
+        chrome.runtime.sendMessage({type: 'loadPreferences'}, function(response) {
+          let preferences = response.preferences;
+          if (preferences) {
             console.log("Preferences loaded");
             // Set the preferences on the options page
             if (preferences.darkMode) {
-                document.body.classList.add('dark');
-                themeToggle.checked = true;
+              document.body.classList.add('dark');
+              themeToggle.checked = true;
             } else {
-                document.body.classList.remove('dark');
-                themeToggle.checked = false;
+              document.body.classList.remove('dark');
+              themeToggle.checked = false;
             }
-
             for (let feature in preferences) {
-                if (preferences[feature].enabled) {
-                    features[feature].toggle.checked = true;
+              if (preferences[feature].enabled) {
+                features[feature].toggle.checked = true;
+              } else {
+                features[feature].toggle.checked = false;
+              }
+              for (let option in preferences[feature].options) {
+                let input = features[feature][option];
+                if (input.type === 'checkbox') {
+                  input.checked = preferences[feature].options[option];
+                } else if (input.type === 'range') {
+                  input.value = preferences[feature].options[option];
                 } else {
-                    features[feature].toggle.checked = false;
+                  input.value = preferences[feature].options[option];
                 }
-
-                for (let option in preferences[feature].options) {
-                    let input = features[feature][option];
-                    if (input.type === 'checkbox') {
-                        input.checked = preferences[feature].options[option];
-                    } else if (input.type === 'range') {
-                        input.value = preferences[feature].options[option];
-                    } else {
-                        input.value = preferences[feature].options[option];
-                    }
-                }
+              }
             }
-        }
-    });
-}
-
-// Load the user's preferences when the options page starts
-loadPreferences();
-
-// Function to save preferences
-    function savePreferences() {
-        let preferences = {
-            darkMode: themeToggle.checked
-        };
-
-        for (let feature in features) {
-            preferences[feature] = {
-                enabled: features[feature].toggle.checked,
-                options: {}
-            };
-
-            for (let option in features[feature]) {
-                if (option !== 'toggle') {
-                    let input = features[feature][option];
-                    if (input.type === 'checkbox') {
-                        preferences[feature].options[option] = input.checked;
-                    } else {
-                        preferences[feature].options[option] = input.value;
-                    }
-                }
-            }
-        }
-
-        // Encrypt the preferences using the encryption key
-        const unencryptedPreferences = preferences;
-
-        // Send the unencrypted preferences to the background script to save
-        chrome.runtime.sendMessage({type: 'savePreferences', preferences: unencryptedPreferences}, function(response) {
-            if (response.error) {
-                console.error('Error saving preferences:', response.error);
-                displayError('Error saving preferences: ' + response.error);
             } else {
-                console.log('Preferences saved successfully');
+                console.error('Error loading preferences');
+                displayError('Error loading preferences');
             }
         });
-    }
+    };
+
+    loadPreferences();
+
+
+        
+
+// Function to save preferences
+    const savePreferences = () =>{
+            let preferences = {
+                darkMode: themeToggle.checked
+            };
+
+            for (let feature in features) {
+                preferences[feature] = {
+                    enabled: features[feature].toggle.checked,
+                    options: {}
+                };
+
+                for (let option in features[feature]) {
+                    if (option !== 'toggle') {
+                        let input = features[feature][option];
+                        if (input.type === 'checkbox') {
+                            preferences[feature].options[option] = input.checked;
+                        } else {
+                            preferences[feature].options[option] = input.value;
+                        }
+                    }
+                }
+            }
+
+            // Encrypt the preferences using the encryption key
+            const unencryptedPreferences = preferences;
+
+            // Send the unencrypted preferences to the background script to save
+            chrome.runtime.sendMessage({ type: 'savePreferences', preferences: unencryptedPreferences }, function (response) {
+                if (response.error) {
+                    console.error('Error saving preferences:', response.error);
+                    displayError('Error saving preferences: ' + response.error);
+                } else {
+                    console.log('Preferences saved successfully');
+                }
+            });
+        }
     
 
     themeToggle.addEventListener('change',() => {
@@ -144,8 +142,6 @@ loadPreferences();
             if (response.error) {
                 console.error('Error initiating Twitch OAuth:', response.error);
                 displayError('Error initiating Twitch OAuth: ');
-                return;
-                
             } else {
                 console.log('Twitch OAuth initiated successfully')
             }

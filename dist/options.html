@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>AI StreamMate</title>
+    <link id="theme-style" rel="stylesheet" href="light.css">
+</head>
+<body>
+    <div id="error-message" style="display: none;"></div>
+    <div id="success-message" style="display: none;"></div>
+    
+    <div id="twitchAuth">
+        <button id="twitchAuthButton">Authenticate with Twitch</button>
+    </div>  
+    <header>
+        <h1>AI StreamMate</h1>
+        <label class="switch">
+            <input id="themeToggle" type="checkbox">
+            <span class="slider round"></span>
+        </label>
+    </header>
+    <main>
+        <section class="feature">
+            <header>
+                <h2>Sentiment Analysis</h2>
+                <label class="switch">
+                    <input id="sentimentToggle" type="checkbox">
+                    <span class="slider round"></span>
+                </label>
+            </header>
+            <button id="sentimentButton">Options</button>
+            <div id="sentimentOptions" style="display: none;">
+                <div class="option">
+                    <label for="showTopScorers">Show top 3 sentiment scorers:</label>
+                    <input type="checkbox" id="showTopScorers" name="showTopScorers">
+                </div>
+                <div class="option">
+                    <label for="showBottomScorers">Show bottom 3 sentiment scorers:</label>
+                    <input type="checkbox" id="showBottomScorers" name="showBottomScorers">
+                </div>
+                <div class="option">
+                    <label for="leaderboardDuration">Leaderboard duration:</label>
+                    <select id="leaderboardDuration" name="leaderboardDuration">
+                        <option value="all">All time</option>
+                        <option value="month">1 month</option>
+                        <option value="week">1 week</option>
+                    </select>
+                </div>
+                <label>
+                    Sensitivity:
+                    <input id="sentimentSensitivity" type="range" min="1" max="100">
+                    <span id="sentimentSensitivityValue"></span>
+                </label>
+            </div>
+        </section>
+        <section class="feature">
+            <header>
+                <h2>Toxicity Detection</h2>
+                <label class="switch">
+                    <input id="toxicityToggle" type="checkbox">
+                    <span class="slider round"></span>
+                </label>
+            </header>
+            <button id="toxicityButton">Options</button>
+            <div id="toxicityOptions" style="display: none;">
+                <label>
+                    Custom Message:
+                    <input id="toxicityMessage" type="text" placeholder="Enter custom message">
+                </label>
+                <label>
+                    Notify Mods:
+                    <input id="toxicityModNotification" type="checkbox">
+                </label>
+                <label>
+                    Self Notification:
+                    <input id="toxicitySelfNotification" type="checkbox">
+                </label>
+                <label>
+                    Custom Mod Message:
+                    <input id="toxicityModMessage" type="text" placeholder="Enter custom message">
+                </label>
+                <label>
+                    Custom Self Message:
+                    <input id="toxicitySelfMessage" type="text" placeholder="Enter custom message">
+                </label>
+            </div>
+        </section>
+    </main>
+    <script src="options.js"></script>
+</body>
+</html>
