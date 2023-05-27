@@ -4,7 +4,7 @@
 // Imports
 import { displayError } from './errorHandling.js';
 import { storeInCookies } from './handleTwitchLoginLogout.js';
-
+    
 
 
 // Function declaration statement

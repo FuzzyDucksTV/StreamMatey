@@ -2,7 +2,9 @@
 import { analyzeToxicity } from './handleToxicityAnalysis.js';
 import { decrypt } from './handleEncryption.js';
 import { displayError } from './errorHandling.js';
+import background from './background.js';
 
+let client = background.client;
 function getCustomMessageMods() {
     return new Promise((resolve, reject) => {
         chrome.storage.sync.get(['customMessageMods'], function(data) {
@@ -63,9 +65,12 @@ function checkIfUserIsLoggedIn() {
                 if (data.twitchAccessToken.length > 0) {
                 resolve(true);
             }
-        });
+        }
     });
+});
 }
+
+
 //Get the twitchclientid from storage
 function getTheTwitchClientIDfromStorage() {
     return new Promise((resolve, reject) => {
@@ -130,25 +135,25 @@ function setClient(options) {
     return new tmi.client(options);
 }
 
-     //function to set the client on event handlers
-        function setClientOnEventHandlers(client) {
-            client.on('connected', onConnectedHandler);
-            client.on('disconnected', onDisconnectedHandler);
-            client.on('message', handleChatMessage);
-            client.on('cheer', handleCheerHandler);
-            client.on('giftpaidupgrade', handleGiftPaidUpgradeHandler);
-            client.on('subgift', handleSubGiftHandler);
-            client.on('submysterygift', handleSubMysteryGiftHandler);
-            client.on('subscription', handleSubscriptionHandler);
-            client.on('primepaidupgrade', handlePrimePaidUpgradeHandler);
-            client.on('rewardgift', handleRewardGiftHandler);
-        }
+//function to set the client on event handlers
+function setClientOnEventHandlers(client) {
+    client.on('connected', onConnectedHandler);
+    client.on('disconnected', onDisconnectedHandler);
+    client.on('message', handleChatMessage);
+    client.on('cheer', handleCheerHandler);
+    client.on('giftpaidupgrade', handleGiftPaidUpgradeHandler);
+    client.on('subgift', handleSubGiftHandler);
+    client.on('submysterygift', handleSubMysteryGiftHandler);
+    client.on('subscription', handleSubscriptionHandler);
+    client.on('primepaidupgrade', handlePrimePaidUpgradeHandler);
+    client.on('rewardgift', handleRewardGiftHandler);
+}
       
 
 
-// add event listeners to monitor Twitch chat when the extension is installed or updated and the user is logged in, and stop monitoring Twitch chat when the user is logged out
+// add event listeners to monitor Twitch chat when the extension is installed or updated 
+// and the user is logged in, and stop monitoring Twitch chat when the user is logged out
 chrome.runtime.onStartup.addListener(monitorTwitchChat);
-
 //add event listeners for client
 client.on('connected', onConnectedHandler);
 client.on('disconnected', onDisconnectedHandler);
@@ -329,29 +334,9 @@ async function checkIfStreamIsLive() {
         displayError('Error: Twitch client ID not found');
         return;
     }
-    // Get the encrypted Twitch access token and encryption key from Chrome's sync storage
-    const encryptedAccessToken = await getTwitchAccessToken();
-    const encryptionKey = await getEncryptionKey();
-    if (!encryptedAccessToken || !encryptionKey) {
-        console.error('Error: Twitch access token or encryption key not found');
-        displayError('Error: Twitch access token or encryption key not found');
-        return;
-    }
-    // Decrypt the Twitch access token using the encryption key
-    const twitchAccessToken = await decrypt(encryptedAccessToken, encryptionKey);
-    // Get the current Twitch channel
-    const channel = await getCurrentChannel(twitchAccessToken, twitchClientId);
-    // Configure the Twitch client
-    const options = {
-        options: { debug: true },
-        connection: { reconnect: true },
-        identity: { username: channel, password: `oauth:${twitchAccessToken}` },
-        channels: [channel]
-    };
-    const client = new tmi.client(options);
 
     // Check if the stream is live
-    const streamIsLive = await getStreamIsLive(channel, twitchClientId);
+    const streamIsLive = await getStreamIsLive(twitchClientId);
     // Disconnect from the Twitch chat
     return streamIsLive;
 }
@@ -455,12 +440,7 @@ async function getStreamIsLive(channel, twitchClientId) {
     const userId = await getUserIdFromStorage()
     // Get the current Twitch channel's stream
     const stream = await getStream(userId, twitchClientId);
-    // Check if the stream is live
-    
-    if (stream.stream_type == 'live') {
-        return true;
-    }
-    return false;
+    return !!(stream.stream_type == 'live');
 }
 
 //function to get getUserIdFromStorage();
@@ -478,9 +458,6 @@ async function getUserIdFromStorage() {
         });
     });
 }
-
-
-//function to get the userid
 
 // Function to handle Twitch chat messages
 async function handleChatMessage (channel, userstate, message, self) {
@@ -591,7 +568,6 @@ async function handleChatMessage (channel, userstate, message, self) {
                     if (chrome.runtime.lastError) {
                         console.error('Error saving sentiment score:', chrome.runtime.lastError);
                         displayError('Error saving sentiment score: ' + chrome.runtime.lastError.message);
-                        return;
                     }
                 });
                 return;

@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
             sensitivity: document.getElementById('sentimentSensitivity'),
             showTopScorersToggle: document.getElementById('showTopScorersToggle'),
             showBottomScorersToggle: document.getElementById('showBottomScorersToggle'),
-            leaderboardToggle: document.getElementById('leaderboardToggle')
+            leaderboardToggle: document.getElementById('leaderboardToggle'),
             showTopScorers: document.getElementById('showTopScorers'),
             showBottomScorers: document.getElementById('showBottomScorers'),
             leaderboardDuration: document.getElementById('leaderboardDuration')
@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
         },
         darkMode: {
             darkMode: document.getElementById('darkModeToggle')
-        }
+        },
     };
  
     const themeToggle = document.getElementById('darkModeToggle');
