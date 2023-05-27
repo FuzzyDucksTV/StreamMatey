@@ -1,31 +1,26 @@
 //imports
-import { checkTwitchLogin, initiateTwitchOAuth } from './handleTwitchChatMessages.js';
+import { checkTwitchLogin, initiateTwitchOAuth } from './handleTwitchLoginLogout';
 import { getPreferences, savePreferences } from './handlePreferences.js';
-import { getSentimentScoreStored, getToxicityScore } from './handleSentimentAnalysis.js';
 
 
 // Function to handle messages from the content script
-export function handleMessages(request, sender, sendResponse) {
+export async function handleMessages(request, sender, sendResponse) {
     switch (request.type) {
       case 'checkTwitchLogin':
-        checkTwitchLogin(sendResponse);
+        await checkTwitchLogin(sendResponse);
         break;
       case 'getPreferences':
-        getPreferences(sendResponse);
+        await getPreferences(sendResponse);
+        break;
+      case 'loadPreferences':
+        await getPreferences(sendResponse);
         break;
       case 'initiateTwitchOAuth':
-        initiateTwitchOAuth();
+        await initiateTwitchOAuth();
         break;
       case 'savePreferences':
         savePreferences(request.preferences);
         break;
-      case 'getSentimentScore':
-          //Get sentiment score from storage
-          getSentimentScoreStored(request.text, sendResponse);
-          break;
-      case 'getToxicityScore':
-          getToxicityScore(request.text, sendResponse);
-          break;
       default:
         console.error('Unknown request type:', request.type);
     }

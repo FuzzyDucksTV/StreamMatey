@@ -1,11 +1,11 @@
 // Function to handle changes in Chrome's sync storage
-export function handleStorageChanges(changes) {
+export async function handleStorageChanges(changes) {
     for (let key in changes) {
         let storageChange = changes[key];
         switch (key) {
         case 'preferences':
             // Update the preferences object
-            preferences = storageChange.newValue;
+            let preferences = storageChange.newValue;
             break;
         case 'leaderboard':
             // Update the chat history object

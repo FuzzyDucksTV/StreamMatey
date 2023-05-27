@@ -24,48 +24,6 @@ let leaderboard = [];
 // Variables to store the chat history
 let chatHistory = [];
 
-// Function to get the user's preferences from background.js
-function getPreferences() {
-  return new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage({ type: 'getPreferences' }, (response) => {
-      if (chrome.runtime.lastError) {
-        reject(chrome.runtime.lastError);
-      } else {
-        resolve(response);
-      }
-    });
-  });
-}
-
-// function to set preference variables from getPreferences()
-function setPreferenceVariables() {
-  getPreferences().then((preferences) => {
-    enableSentimentAnalysis = preferences.sentiment.enabled;
-    enableToxicityDetection = preferences.toxicity.enabled;
-    sentimentSensitivity = preferences.sentiment.options.sensitivity;
-    toxicitySensitivity = preferences.toxicity.options.sensitivity;
-  }).catch((error) => {
-    console.error('Error:', error);
-    sendWarningToExtUser('Error: ' + error.message);
-  });
-}
-
-// Function to get the sentiment score from background.js
-function SentimentAnalysis(request) {
-  if (enableSentimentAnalysis) {
-    sentimentScore = getSentimentScore(request.text);
-    updateSentimentMeter(sentimentScore);
-  }
-}
-
-// Function to get the toxicity score from background.js
-function ToxicityDetection(request) {
-  if (enableToxicityDetection) {
-    toxicityScore = getToxicityScore(request.text);
-    updateToxicityMeter(toxicityScore);
-  }
-}
-
 // Function to get the sentiment score from background.js
 function updateSentimentScore(request) {
   sentimentScore =  request.SentimentScore;
@@ -79,23 +37,14 @@ function updateSentimentScore(request) {
     //update the sentiment score in the HTML
     document.getElementById('sentimentScore').innerHTML = sentimentScore;
     //update the sentiment giger-meter in the HTML
-    document.getElementById('gigerMeter').style.width = `${sentimentScore * 100}%`;
-    
+    updateSentimentMeter(sentimentScore);
   }
 }
+
 // Function to handle incoming messages
 async function handleMessage(request, sender, sendResponse) {
   try {
     switch (request.type) {
-      case 'sentimentAnalysis':
-        SentimentAnalysis(request.text)
-        break;
-      case 'toxicityDetection':
-        if (enableToxicityDetection) {
-          toxicityScore = await getToxicityScore(request.text);
-          updateToxicityMeter(toxicityScore);
-        }
-        break;
       case 'updateLeaderboard':
         updateLeaderboard(request);
         break;
@@ -105,131 +54,87 @@ async function handleMessage(request, sender, sendResponse) {
       case 'updateToxicityScore':
          updateToxicityScore(request);
         break;
-        default:
+      case 'updateChatHistory':
+        updateChatHistory(request);
+        break;
+      default:
           sendWarningToExtUser('Error: Unknown message type');
           break;
     }
-    return true; // Indicate that the response will be sent asynchronously
- } catch (error) {
+  } catch (error) {
     console.error('Error:', error);
     sendWarningToExtUser('Error: ' + error.message);
+    return true; // Indicate that the response will be sent asynchronously
   }
-  return true; // Indicate that the response will be sent asynchronously
-  //return true; // Indicate that the response will be sent asynchronously
+}
+
+// Function to send a warning to the extension user
+
+function sendWarningToExtUser(message) {
+  chrome.tabs.query({active: true, currentWindow: true}, function(tabs) {
+    chrome.tabs.sendMessage(tabs[0].id, {type: 'warning', message: message});
+  });
 }
 
 function updateToxicityScore(request) {
   toxicityScore = request.ToxicityScore;
   //check if the toxicity score is a number
-  isToxicityScoreNan(toxicityScore);
-  setPreferenceVariables();
-  // Listen for messages from the background script
-  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    if (request.type === 'updatePreferences') {
-      setPreferenceVariables();
-      return true; // Indicate that the response will be sent asynchronously
-    } 
-  });
-  }
+  if (isNaN(toxicityScore)) { toxicityScore = 0; }
 
-  function isToxicityScoreNan(toxicityScore) {
-    if (isNaN(toxicityScore)) {
-      //if the toxicity score is not a number, set the toxicity score to 0
-      toxicityScore = 0.1;
-    }
-      //if the toxicity score is a number, round the toxicity score to 2 decimal places
-      toxicityScore = Math.round(toxicityScore * 100) / 100;
-      //update the toxicity score in the HTML
-      document.getElementById('toxicityScore').innerHTML = toxicityScore;
-      //update the toxicity giger-meter in the HTML
-      document.getElementById('toxicityMeter').style.width = `${toxicityScore * 100}%`;
-    
-    return toxicityScore;
-  }
+  //update the toxicity score in the HTML
+  document.getElementById('toxicityScore').innerHTML = toxicityScore;
+  //update the toxicity giger-meter in the HTML
+  updateToxicityMeter(toxicityScore)
+}
+
+
+ 
 
 //function to update the sentiment meter
 function updateSentimentMeter(sentimentScore) {
   const sentimentMeter = document.getElementById('gigerMeter');
   // Update the sentiment meter
-  if (sentimentScore !== null) {
-    sentimentMeter.style.width = `${sentimentScore * 100}%`;
+  if (isNaN(sentimentScore)) {
+    sentimentMeter.style.width = '0%';
+    return;
   }
+    sentimentMeter.style.width = `${sentimentScore * 100}%`;
 }
+
 
 //function to update the toxicity meter
 function updateToxicityMeter(toxicityScore) {
   const toxicityMeter = document.getElementById('toxicityMeter');
   // Update the toxicity meter
-  if (toxicityScore !== null) {
+  if (isNaN(toxicityScore)) {
+    toxicityMeter.style.width = '0%';
+    return;
+  }
     toxicityMeter.style.width = `${toxicityScore * 100}%`;
-  }
 }
 
+//function to update the leaderboard
 
-// Function to update the sentiment and toxicity meters in the HTML
-function updateMeters(sentimentScore, toxicityScore) {
-  const sentimentMeter = document.getElementById('gigerMeter');
-  const toxicityMeter = document.getElementById('toxicityMeter');
-
-  // Update the sentiment meter
-  if (sentimentScore !== null) {
-    sentimentMeter.style.width = `${sentimentScore * 100}%`;
+function updateLeaderboard(request) {
+  leaderboard = request.Leaderboard;
+  //check if the leaderboard is an array
+  if (!Array.isArray(leaderboard)) {
+    //if the leaderboard is not an array, set the leaderboard to an empty array
+    leaderboard = [];
   }
-
-  // Update the toxicity meter
-  if (toxicityScore !== null) {
-    toxicityMeter.style.width = `${toxicityScore * 100}%`;
-  }
+  //update the leaderboard in the HTML
+  document.getElementById('leaderboard').innerHTML = leaderboard.map(item => `<li>${item.Name}: ${item.Score}</li>`).join('');
 }
 
-// Function to update the sentiment score in the HTML
-function updateSentimentScore(sentimentScore) {
-  const sentimentScoreElement = document.getElementById('sentimentScore');
+//function to update the chat history
 
-  if (sentimentScore !== null) {
-    sentimentScoreElement.innerHTML = sentimentScore;
+function updateChatHistory(request) {
+  chatHistory = request.ChatHistory;
+  //check if the chat history is an array
+  if (!Array.isArray(chatHistory)) {
+    //if the chat history is not an array, set the chat history to an empty array
+    chatHistory = [];
   }
+  //update the chat history in the HTML
+  document.getElementById('chatHistory').innerHTML = chatHistory.map(item => `<li>${item}</li>`).join('');
 }
-
-// Function to update the toxicity score in the HTML
-function updateToxicityScore(toxicityScore) {
-  const toxicityScoreElement = document.getElementById('toxicityScore');
-
-  if (toxicityScore !== null) {
-    toxicityScoreElement.innerHTML = toxicityScore;
-  }
-}
-
-// Function to update the sentiment and toxicity scores in the HTML
-function updateScores(sentimentScore, toxicityScore) {
-  updateSentimentScore(sentimentScore);
-  updateToxicityScore(toxicityScore);
-}
-
-//function to get toxicity score
-function getToxicityScore(text) {
-  //get the toxicity score
-  let toxicityScore = text.toxicityScore;
-  //check if the toxicity score is null
-  if (toxicityScore == null) {
-    //set the toxicity score to 0
-    toxicityScore = 0;
-  }
-  //return the toxicity score
-  return toxicityScore;
-}
-
-//function to get sentiment score
-function getSentimentScore(text) {
-  //get the sentiment score
-  let sentimentScore = text.sentimentScore;
-  //check if the sentiment score is null
-  if (sentimentScore == null) {
-    //set the sentiment score to 0
-    sentimentScore = 0;
-  }
-  //return the sentiment score
-  return sentimentScore;
-}
-
-

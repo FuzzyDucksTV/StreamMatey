@@ -60,7 +60,8 @@ function checkIfUserIsLoggedIn() {
             if (chrome.runtime.lastError) {
                 reject(chrome.runtime.lastError);
             } else {
-                resolve(data.userIsLoggedIn);
+                if (data.twitchAccessToken.length > 0) {
+                resolve(true);
             }
         });
     });
@@ -144,13 +145,6 @@ function setClient(options) {
 
 // add event listeners to monitor Twitch chat when the extension is installed or updated and the user is logged in, and stop monitoring Twitch chat when the user is logged out
 chrome.runtime.onStartup.addListener(monitorTwitchChat);
-chrome.storage.onChanged.addListener(function(changes) {
-    if (changes.twitchAccessToken && changes.twitchAccessToken.newValue) {
-        monitorTwitchChat();
-    }
-});
-
-
 
 //add event listeners for client
 client.on('connected', onConnectedHandler);
@@ -164,21 +158,6 @@ client.on('primepaidupgrade', onPrimePaidUpgradeHandler);
 client.on('rewardgift', onRewardGiftHandler);
 client.on('ritual', onRitualHandler);
 client.on('bitsbadgetier', onBitsBadgeTierHandler);
-
-function getTheTwitchClientIDfromStorage() {
-    chrome.storage.sync.get(['twitchClientId'], function (data) {
-        if (chrome.runtime.lastError) {
-            console.error('Error loading Twitch client ID:', chrome.runtime.lastError);
-            displayError('Error loading Twitch client ID: ' + chrome.runtime.lastError.message);
-            return;
-        }
-        let twitchClientId = data.twitchClientId;
-        if (!twitchClientId) {
-            console.error('Error: Twitch client ID not found');
-            displayError('Error: Twitch client ID not found');
-        }
-    });
-}
 
 //function for ondisconnectedhandler
 function onDisconnectedHandler(reason) {
@@ -341,7 +320,7 @@ function onBitsBadgeTierHandler(channel, username, threshold, userstate) {
 async function checkIfStreamIsLive() {
     
 // Get the Twitch client ID from Chrome's sync storage
-    twitchClientId = await getTwitchClientId();
+    let twitchClientId = await getTwitchClientId();
     if (!twitchClientId) {
         console.error('Error: Twitch client ID not found');
         displayError('Error: Twitch client ID not found');
@@ -478,11 +457,8 @@ async function getStreamIsLive(channel, twitchClientId) {
     // Get the current Twitch channel's stream
     const stream = await getStream(userId, twitchClientId);
     // Check if the stream is live
-    if (stream) {
-        return true;
-    } else {
-        return false;
-    }
+    const streamIsLive = stream.stream_type === 'live';
+    return streamIsLive;
 }
 
 //function to get getUserIdFromStorage();
@@ -532,7 +508,7 @@ async function handleChatMessage (channel, userstate, message, self) {
         updateToxicityScore(toxicityScore);
 
     } else if (sentimentScore !== null) {
-        handleSentimentScore(sentimentScore, userstate.username);
+        handleSentimentScore(sentimentScore);
         // Update the sentiment score in the UI
         updateSentimentScore(sentimentScore);
 
@@ -561,11 +537,6 @@ async function handleChatMessage (channel, userstate, message, self) {
     }
   }
   
-  const handleSentimentScore = (sentimentScore) => {
-    if (sentimentScore < sentimentOptions.threshold) {
-        //takeAction(username);
-    }
-  }
   
   const handleToxicityScore = (toxicityScore, username) => {
     if (toxicityScore > toxicityOptions.threshold) {
@@ -632,7 +603,6 @@ async function handleChatMessage (channel, userstate, message, self) {
                 if (chrome.runtime.lastError) {
                     console.error('Error saving sentiment score:', chrome.runtime.lastError);
                     displayError('Error saving sentiment score: ' + chrome.runtime.lastError.message);
-                    return;
                 } else {
                     // Send the sentiment score to the ContentScript.js, which will update the leaderboard and giger meter for sentiment.
                     chrome.messages.sendMessage('updateSentimentScore', 'SentimentScore',newSentimentScore);
@@ -653,7 +623,6 @@ async function handleChatMessage (channel, userstate, message, self) {
                 if (chrome.runtime.lastError) {
                     console.error('Error saving toxicity score:', chrome.runtime.lastError);
                     displayError('Error saving toxicity score: ' + chrome.runtime.lastError.message);
-                    return;
                 }
             });
             return;
@@ -667,7 +636,6 @@ async function handleChatMessage (channel, userstate, message, self) {
             if (chrome.runtime.lastError) {
                 console.error('Error saving toxicity score:', chrome.runtime.lastError);
                 displayError('Error saving toxicity score: ' + chrome.runtime.lastError.message);
-                return;
             } else {
                 // Send the toxicity score to the ContentScript.js, which will update the leaderboard and giger meter for toxicity.
                 chrome.messages.sendMessage('updateToxicityScore', 'ToxicityScore', toxicityScore);
@@ -688,13 +656,3 @@ export function getToxicityScoreStored(sendResponse) {
         sendResponse({score: toxicityScore});
     });
 }
-
-// Function to get the sentiment threshold from storage
-
-// Function to get the toxicity threshold from storage
-
-// Function to get the custom message for toxic users from storage
-
-// Function to get the custom message for mods from storage
-
-// Function to get the custom message for extention users from storage

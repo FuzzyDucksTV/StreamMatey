@@ -65,13 +65,13 @@ chrome.storage.sync.get('twitchAccessToken', function(data) {
 
 
 // Handle the login and logout of the user
-chrome.runtime.onMessage.addListener(function(request,sendResponse) {
+chrome.runtime.onMessage.addListener(async function(request, sender, sendResponse) {
     if (request.type === 'checkTwitchLogin') {
-        checkTwitchLogin(sendResponse);
+        await checkTwitchLogin(sendResponse);
         return true; // Needed to make the sendResponse asynchronous
         
       } else if (request.type === 'twitchLogin') {
-        twitchLogin(sendResponse);
+        await twitchLogin(sendResponse);
         return true; // Needed to make the sendResponse asynchronous
     } else if (request.type === 'twitchLogout') {
         twitchLogout(sendResponse);
@@ -80,13 +80,13 @@ chrome.runtime.onMessage.addListener(function(request,sendResponse) {
 });
 
 // Function to log the user in to Twitch
-function twitchLogin(sendResponse) {
+async function twitchLogin(sendResponse) {
     // Get the client ID
     const clientId = twitchClientId;
     // Generate a random string for the state parameter
 
     // Save the state and nonce in storage
-    initiateTwitchOAuth(clientId);
+    await initiateTwitchOAuth(clientId);
     // Send a response
     sendResponse({ loggedIn: true});
 }
@@ -112,13 +112,12 @@ export async function checkTwitchLogin(sendResponse) {
     chrome.storage.sync.get(['twitchAccessToken'], function(data) {
       if (chrome.runtime.lastError) {
         console.error('Error loading Twitch access token:', chrome.runtime.lastError);
-        sendResponse(false);
+        sendResponse({loggedIn : false});
         return;
       }
       const twitchAccessToken = data.twitchAccessToken;
       if (!twitchAccessToken) {
-        //console.error('Error: Twitch access token not found');
-        sendResponse(false);
+        sendResponse({loggedIn : false});
         return;
       }
       // Decrypt the access token using the encryption key
@@ -131,7 +130,7 @@ export async function checkTwitchLogin(sendResponse) {
         const encryptionKey = data.encryptionKey;
         if (!encryptionKey) {
           console.error('Error: Encryption key not found');
-          sendResponse(false);
+          sendResponse({loggedIn : false});
           return;
         }
         const twitchAccessToken = decrypt(twitchAccessToken, encryptionKey);
@@ -149,10 +148,11 @@ export async function checkTwitchLogin(sendResponse) {
                 sendResponse({ error: 'Error removing Twitch access token: ' + chrome.runtime.lastError.message, loggedIn: false });
                 return;
               }
-              sendResponse(false);
+              sendResponse({loggedIn : false});
             });
           } else {
-            sendResponse(true);
+            sendResponse({loggedIn : true});
+
           }
         }).catch(error => {
           console.error('Error validating Twitch access token:', error);
@@ -167,7 +167,7 @@ export async function checkTwitchLogin(sendResponse) {
 
     // Function to initiate the Twitch OAuth flow
     
-async function initiateTwitchOAuth(clientId) {
+export async function initiateTwitchOAuth(clientId) {
     try {
         // twitch access token using a netlify function
         const response = await fetch('https://twitch-oauth.netlify.app/.netlify/functions/twitch-oauth', {

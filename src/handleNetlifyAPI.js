@@ -23,7 +23,7 @@ export function getNetlifyFunctionUrl() {
 export async function getTwitchAccessToken(clientId) {
     try {
         //Get access token from netlify function
-        const netlifyFunctionUrl = await getNetlifyFunctionUrl();
+        const netlifyFunctionUrl = getNetlifyFunctionUrl();
         const response = await jQuery.ajax({
             url: netlifyFunctionUrl,
             type: 'GET',

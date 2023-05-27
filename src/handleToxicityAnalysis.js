@@ -13,7 +13,7 @@ export async function analyzeToxicity(message) {
           languages: ['en'],
           requestedAttributes: { TOXICITY: {} }
         };
-        return new Promise((resolve, reject) => {
+        await new Promise((resolve, reject) => {
           fetch(url, {
             method: 'POST',
             body: JSON.stringify(data),

@@ -1,13 +1,13 @@
      //imports
         import { displayError } from './errorHandling.js';
         import { sendWarningToExtUser } from './handleTwitchChatMessages.js';
-        import { encrypt } from './handleEncryption.js';
-        import { decrypt } from './handleEncryption.js';
+        import { encrypt, decrypt } from './handleEncryption.js';
+  
         
      
      // Function to get the user's preferences
      
-     export function getPreferences(sendResponse) {
+     export async function getPreferences(sendResponse) {
         chrome.storage.sync.get(['preferences'], function(data) {
           if (chrome.runtime.lastError) {
             console.error('Error loading preferences:', chrome.runtime.lastError);
@@ -40,7 +40,7 @@
         }
        // Set default values for the extension's preferences
      // function to set default values for the extension
-    export async function setDefaultPreferences() {
+    export function setDefaultPreferences() {
         // Set default values for preferences
         let preferences = {};
         preferences.sentiment = {};
@@ -49,8 +49,8 @@
         preferences.toxicity.options = {};
         preferences.sentiment.options.leaderboard = {};
         preferences.toxicity.options.leaderboard = {};
-        preferences.sentiment.options.leaderboard = {};
-        
+        preferences.darkMode = false;
+
         let leaderboard = {};
         leaderboard.sentiment = [];
         leaderboard.toxicity = [];
@@ -74,7 +74,6 @@
         preferences.toxicity.options.showLeaderboard = true; // bottom 3 scorers
         preferences.sentiment.options.showTopScorers = true;
         preferences.toxicity.options.showBottomScorers = true;
-        preferences.sentiment.options.message = 'This message from {user} may be negative.';
         preferences.toxicity.options.message = 'This message from {user} may be toxic.';
         preferences.sentiment.options.leaderboardDuration = 7;
         preferences.toxicity.options.leaderboardDuration = 7;
@@ -84,57 +83,24 @@
         preferences.toxicity.options.leaderboardType = 'bottom';
 
 
-        // Set default values for the sentiment and toxicity options
-        let sentimentOptions = {};
-        let toxicityOptions = {};
-        sentimentOptions.sensitivity = 0.5;
-        toxicityOptions.threshold = 0.5;
-        toxicityOptions.customMessagetoMods = "This message from {user} may be toxic.";
-        toxicityOptions.warningToxicUser = true;
-
-        // Set default values for the leaderboard options
-        sentimentOptions.showLeaderboard = true;
-        toxicityOptions.showLeaderboard = true;
-        sentimentOptions.showTopScorers = true;
-        toxicityOptions.showBottomScorers = true;
-        sentimentOptions.message = 'This message from {user} may be negative.';
-        toxicityOptions.message = 'This message from {user} may be toxic.';
-        sentimentOptions.leaderboardDuration = 7;
-        toxicityOptions.leaderboardDuration = 7;
-        sentimentOptions.leaderboardSize = 6;
-        toxicityOptions.leaderboardSize = 6;
-        sentimentOptions.leaderboardType = 'top';
-        toxicityOptions.leaderboardType = 'bottom';
-
-        // Set default values for the leaderboard
-        leaderboard.sentiment = [];
-        leaderboard.toxicity = [];
-
-        // Set default values for the chat history
-        chatHistory.sentiment = [];
-        chatHistory.toxicity = [];
-
-        // Set default values for the encryption key
-        encryptionKey = null;
 
         //Encrypt the preferences child values before storing them
-        preferences.sentiment.options.customMessagetoMods = encrypt(preferences.sentiment.options.customMessagetoMods, encryptionKey);
-        preferences.toxicity.options.customMessagetoMods = encrypt(preferences.toxicity.options.customMessagetoMods, encryptionKey);
-        preferences.toxicity.options.customMessageToxicUser = encrypt(preferences.toxicity.options.customMessageToxicUser, encryptionKey);
-        preferences.sentiment.options.message = encrypt(preferences.sentiment.options.message, encryptionKey);
-        preferences.toxicity.options.message = encrypt(preferences.toxicity.options.message, encryptionKey);
+        preferences = encrypt(preferences, encryptionKey);
+        leaderboard = encrypt(leaderboard, encryptionKey);
+        chatHistory = encrypt(chatHistory, encryptionKey);
 
         // Store the default values in Chrome's sync storage
-        chrome.storage.sync.set({ preferences: preferences }, function() {
+        chrome.storage.sync.set({ preferences: preferences, leaderboard: leaderboard, chatHistory: chatHistory }, function() {
             if (chrome.runtime.lastError) {
                 console.error('Error setting preferences:', chrome.runtime.lastError);
-                sendWarningToExtUser('Error setting preferences: ' + chrome.runtime.lastError.message);
+                sendWarningToExtUser('Error setting preferences:'+ chrome.runtime.lastError.message);
             }
         }
         );
     }
  
         
+
         // Function to save the user's preferences
         export function savePreferences(preferenceData) {
             chrome.storage.sync.get(['encryptionKey'], function(data) {

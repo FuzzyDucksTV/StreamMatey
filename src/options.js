@@ -1,23 +1,36 @@
 document.addEventListener('DOMContentLoaded', (event) => {
     const features = {
         sentiment: {
-            toggle: document.getElementById('sentimentToggle'),
+            enableSentimentAnalysis: document.getElementById('sentimentToggle'),
             sensitivity: document.getElementById('sentimentSensitivity'),
+            showTopScorersToggle: document.getElementById('showTopScorersToggle'),
+            showBottomScorersToggle: document.getElementById('showBottomScorersToggle'),
+            leaderboardToggle: document.getElementById('leaderboardToggle')
             showTopScorers: document.getElementById('showTopScorers'),
             showBottomScorers: document.getElementById('showBottomScorers'),
             leaderboardDuration: document.getElementById('leaderboardDuration')
         },
         toxicity: {
-            toggle: document.getElementById('toxicityToggle'),
-            message: document.getElementById('toxicityMessage'),
-            modNotification: document.getElementById('toxicityModNotification'),
-            selfNotification: document.getElementById('toxicitySelfNotification'),
+            enableToxicityDetection: document.getElementById('toxicityToggle'),
+            customMessageToxicUser: document.getElementById('toxicityMessage'),
+            modNotificationToggle: document.getElementById('modNotificationToggle'),
+            selfNotificationToggle: document.getElementById('toxicitySelfNotificationToggle'),
             modMessage: document.getElementById('toxicityModMessage'),
-            selfMessage: document.getElementById('toxicitySelfMessage')
+            selfMessage: document.getElementById('toxicitySelfMessage'),
+            toxicityThreshold: document.getElementById('toxicitySensitivity'),
+            showTopScorersToggle: document.getElementById('showTopScorersToggle'),
+            showBottomScorersToggle: document.getElementById('showBottomScorersToggle'),
+            leaderboardToggle: document.getElementById('leaderboardToggle'),
+            showTopScorers: document.getElementById('showTopScorers'),
+            showBottomScorers: document.getElementById('showBottomScorers'),
+            leaderboardDuration: document.getElementById('leaderboardDuration')
+        },
+        darkMode: {
+            enableDarkMode: document.getElementById('darkModeToggle')
         }
     };
-
-    const themeToggle = document.getElementById('themeToggle');
+ 
+    const themeToggle = document.getElementById('darkModeToggle');
     const twitchLoginButton = document.getElementById('twitchLoginButton');
     const twitchLogoutButton = document.getElementById('twitchLogoutButton');
 
@@ -176,14 +189,8 @@ loadPreferences();
             displayError(request.message);
         } else if (request.type === 'error') {
             displayError(request.message);
-        } else if (request.type === 'success') {
-            const successMessageElement = document.getElementById('success-message');
-            successMessageElement.textContent = request.message;
-            successMessageElement.style.display = 'block';
         } else if (request.type === 'preferences') {
             const preferences = request.preferences;
-            
-
             if (preferences) {
                 // Decrypt the preferences using the encryption key
                 const decryptedPreferences = preferences;
@@ -225,22 +232,5 @@ loadPreferences();
     });
 });
 
-/* enableSentimentAnalysis = preferences.sentiment.enabled;
-enableToxicityDetection = preferences.toxicity.enabled;
-sentimentSensitivity = preferences.sentiment.options.sensitivity;
-toxicityThreshold = preferences.toxicity.options.threshold;
-warningMessageToxic = preferences.toxicity.options.warningMessageToxic;
-warningMessageNegative = preferences.toxicity.options.warningMessageNegative;
-customMessageToxic = preferences.toxicity.options.customMessageToxic;
-customMessageNegative = preferences.toxicity.options.customMessageNegative;
-warningToxicUser = preferences.toxicity.options.warningToxicUser;
-warningNegativeUser = preferences.toxicity.options.warningNegativeUser;
-customMessageToxicUser = preferences.toxicity.options.customMessageToxicUser;
-customMessageNegativeUser = preferences.toxicity.options.customMessageNegativeUser;
-enableDarkMode = preferences.darkMode;
-sentimentLeaderboard = preferences.sentiment.options.showLeaderboard;
-toxicityLeaderboard = preferences.toxicity.options.showLeaderboard;
-sentimentLeaderboardDuration = preferences.sentiment.options.leaderboardDuration;
-toxicityLeaderboardDuration = preferences.toxicity.options.leaderboardDuration;
-*/
+
 

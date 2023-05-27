@@ -30,14 +30,7 @@ import { handleMessages } from './handleBackgroundMessages.js';
 async function init() {
     // Get the user's preferences
     preferences = getPreferences();
-    if (!preferences) {
-      // If no preferences are found, set the default preferences
-      setDefaultPreferences()();
-      preferences = getPreferences();
-      savePreferences(preferences);
-    } else {
-        // If preferences are found, set the encryption key
-        encryptionKey = getEncryptionKey();
+    encryptionKey = getEncryptionKey();
 
     }
 }
@@ -47,6 +40,8 @@ await init();
 
 // Open options page when extension icon is clicked
 chrome.action.onClicked.addListener(() => chrome.tabs.create({url: 'options.html'}));
+// send the preferences to the content script when the extension icon is clicked, instructing the content script to update the preferences on the options.html page
+//chrome.action.onClicked.addListener(() => chrome.tabs.sendMessage({type: 'updatePreferences', preferences: preferences}));
 
 // Start monitoring Twitch chat when the extension is installed or updated
 chrome.runtime.onInstalled.addListener(monitorTwitchChat);
