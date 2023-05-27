@@ -33,7 +33,7 @@ async function init() {
     encryptionKey = getEncryptionKey();
 
     }
-}
+
 
 // Initialize the extension
 await init();

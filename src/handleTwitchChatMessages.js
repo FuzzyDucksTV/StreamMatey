@@ -66,6 +66,7 @@ function checkIfUserIsLoggedIn() {
         });
     });
 }
+//Get the twitchclientid from storage
 function getTheTwitchClientIDfromStorage() {
     return new Promise((resolve, reject) => {
         chrome.storage.sync.get(['twitchClientId'], function(data) {
@@ -77,6 +78,7 @@ function getTheTwitchClientIDfromStorage() {
         });
     });
 }
+
 // Function to monitor Twitch chat
 // Start monitoring Twitch chat when the extension is installed or updated and the user is logged in, and stop monitoring Twitch chat when the user is logged out.
 // Also, make sure the user is currently streaming before monitoring Twitch chat.
@@ -109,7 +111,7 @@ export const monitorTwitchChat = async () => {
             identity: { username: channel, password: `oauth:${twitchAccessToken}` },
             channels: [channel]
             };
-            const client = setClient(options);
+            let client = setClient(options);
             // Connect to the Twitch chat
             client.connect();
             setClientOnEventHandlers(client);
@@ -122,7 +124,8 @@ export const monitorTwitchChat = async () => {
         }
     }
 };
-        
+
+//set the client
 function setClient(options) {
     return new tmi.client(options);
 }
@@ -346,14 +349,10 @@ async function checkIfStreamIsLive() {
         channels: [channel]
     };
     const client = new tmi.client(options);
-    // Connect to the Twitch chat
-    client.connect();
-    // Listen for chat messages
-    client.on('message', handleChatMessage);
+
     // Check if the stream is live
     const streamIsLive = await getStreamIsLive(channel, twitchClientId);
     // Disconnect from the Twitch chat
-    client.disconnect();
     return streamIsLive;
 }
 
@@ -457,8 +456,11 @@ async function getStreamIsLive(channel, twitchClientId) {
     // Get the current Twitch channel's stream
     const stream = await getStream(userId, twitchClientId);
     // Check if the stream is live
-    const streamIsLive = stream.stream_type === 'live';
-    return streamIsLive;
+    
+    if (stream.stream_type == 'live') {
+        return true;
+    }
+    return false;
 }
 
 //function to get getUserIdFromStorage();

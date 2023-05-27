@@ -152,7 +152,6 @@ export async function checkTwitchLogin(sendResponse) {
             });
           } else {
             sendResponse({loggedIn : true});
-
           }
         }).catch(error => {
           console.error('Error validating Twitch access token:', error);
@@ -190,6 +189,7 @@ export async function initiateTwitchOAuth(clientId) {
                 return;
             }
               storeInCookies(encryptedAccessToken);
+              
               // Send a message to the content script to reload the page
               chrome.tabs.sendMessage(sender.tab.id, { type: 'reloadPage' });
               // Send a response

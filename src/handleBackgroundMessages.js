@@ -16,7 +16,7 @@ export async function handleMessages(request, sender, sendResponse) {
         await getPreferences(sendResponse);
         break;
       case 'initiateTwitchOAuth':
-        await initiateTwitchOAuth();
+        await initiateTwitchOAuth(sendResponse);
         break;
       case 'savePreferences':
         savePreferences(request.preferences);

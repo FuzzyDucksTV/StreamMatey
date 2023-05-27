@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
             leaderboardDuration: document.getElementById('leaderboardDuration')
         },
         darkMode: {
-            enableDarkMode: document.getElementById('darkModeToggle')
+            darkMode: document.getElementById('darkModeToggle')
         }
     };
  
@@ -231,6 +231,4 @@ loadPreferences();
 
     });
 });
-
-
 

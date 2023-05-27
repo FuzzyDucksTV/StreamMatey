@@ -42,52 +42,43 @@
      // function to set default values for the extension
     export function setDefaultPreferences() {
         // Set default values for preferences
-        let preferences = {};
-        preferences.sentiment = {};
-        preferences.toxicity = {};
-        preferences.sentiment.options = {};
-        preferences.toxicity.options = {};
-        preferences.sentiment.options.leaderboard = {};
-        preferences.toxicity.options.leaderboard = {};
-        preferences.darkMode = false;
+       
 
-        let leaderboard = {};
-        leaderboard.sentiment = [];
-        leaderboard.toxicity = [];
+        const features = {
+          sentiment: {
+              enableSentimentAnalysis: true,
+              sensitivity: 0.5,
+              showTopScorersToggle: true,
+              showBottomScorersToggle: true,
+              leaderboardToggle: true,
+              showTopScorers: 3,
+              showBottomScorers: 3,
+              leaderboardDuration: 7
+          },
+          toxicity: {
+              enableToxicityDetection: true,
+              customMessageToxicUser: "You may be toxic. Please be respectful.",
+              modNotificationToggle: true,
+              selfNotificationToggle: true,
+              modMessage: "This message from {user} may be toxic.",
+              selfMessage: "This message from {user} may be toxic.",
+              toxicityThreshold: 0.5,
+              showTopScorersToggle: true,
+              showBottomScorersToggle: true,
+              leaderboardToggle: true,
+              showTopScorers: 3,
+              showBottomScorers: 3,
+              leaderboardDuration: 7
+          },
+          darkMode: {
+              enableDarkMode: false,
+          }
 
-        let chatHistory = {};
-        chatHistory.sentiment = [];
-        chatHistory.toxicity = [];
-
-        let encryptionKey = null;
-
-        // Set default values for the user's preferences
-        preferences.sentiment.enabled = true;
-        preferences.toxicity.enabled = true;
-        preferences.sentiment.options.sensitivity = 0.5;
-        preferences.toxicity.options.threshold = 0.5;
-        preferences.toxicity.options.customMessagetoMods = "This message from {user} may be toxic.";
-        preferences.toxicity.options.warningToxicUser = true;
-        preferences.toxicity.options.customMessageToxicUser = "This user may be toxic. Please be respectful.";
-        preferences.darkMode = false;
-        preferences.sentiment.options.showLeaderboard = true; // top 3 scorers
-        preferences.toxicity.options.showLeaderboard = true; // bottom 3 scorers
-        preferences.sentiment.options.showTopScorers = true;
-        preferences.toxicity.options.showBottomScorers = true;
-        preferences.toxicity.options.message = 'This message from {user} may be toxic.';
-        preferences.sentiment.options.leaderboardDuration = 7;
-        preferences.toxicity.options.leaderboardDuration = 7;
-        preferences.sentiment.options.leaderboardSize = 6;
-        preferences.toxicity.options.leaderboardSize = 6;
-        preferences.sentiment.options.leaderboardType = 'top';
-        preferences.toxicity.options.leaderboardType = 'bottom';
-
-
+      };
+      let preferences = { features: features };
 
         //Encrypt the preferences child values before storing them
         preferences = encrypt(preferences, encryptionKey);
-        leaderboard = encrypt(leaderboard, encryptionKey);
-        chatHistory = encrypt(chatHistory, encryptionKey);
 
         // Store the default values in Chrome's sync storage
         chrome.storage.sync.set({ preferences: preferences, leaderboard: leaderboard, chatHistory: chatHistory }, function() {
@@ -117,33 +108,33 @@
                 return;
               }
               let preferences = {
-                darkMode: preferenceData.darkMode,
-                sentiment: {
-                  enabled: preferenceData.sentiment.enabled,
-                  options: {
-                    sensitivity:    preferenceData.sentiment.options.sensitivity,
-                    showTopScorers: preferenceData.sentiment.options.showTopScorers,
-                    showBottomScorers: preferenceData.sentiment.options.showBottomScorers,
-                    leaderboardDuration: preferenceData.sentiment.options.leaderboardDuration,
-                    message: preferenceData.sentiment.options.message,
-                    modNotification: preferenceData.sentiment.options.modNotification,
-                    selfNotification: preferenceData.sentiment.options.selfNotification,
-                    modMessage: preferenceData.sentiment.options.modMessage,
-                    selfMessage: preferenceData.sentiment.options.selfMessage
-                  }
-                },
-                toxicity: {
-                    enabled: preferenceData.toxicity.enabled,
-                    options: {
-                        sensitivity:    preferenceData.toxicity.options.sensitivity,
-                        showTopScorers: preferenceData.toxicity.options.showTopScorers,
-                        showBottomScorers: preferenceData.toxicity.options.showBottomScorers,
-                        leaderboardDuration: preferenceData.toxicity.options.leaderboardDuration,
-                        message: preferenceData.toxicity.options.message,
-                        modNotification: preferenceData.toxicity.options.modNotification,
-                        selfNotification: preferenceData.toxicity.options.selfNotification,
-                        modMessage: preferenceData.toxicity.options.modMessage,
-                        selfMessage: preferenceData.toxicity.options.selfMessage
+                features: {
+                  sentiment: {
+                    enableSentimentAnalysis: preferenceData.features.sentiment.enableSentimentAnalysis,
+                    sensitivity: preferenceData.features.sentiment.sensitivity,
+                    showTopScorersToggle: preferenceData.features.sentiment.showTopScorersToggle,
+                    showBottomScorersToggle: preferenceData.features.sentiment.showBottomScorersToggle,
+                    leaderboardToggle: preferenceData.features.sentiment.leaderboardToggle,
+                    showTopScorers: preferenceData.features.sentiment.showTopScorers,
+                    showBottomScorers: preferenceData.features.sentiment.showBottomScorers,
+                    leaderboardDuration: preferenceData.features.sentiment.leaderboardDuration
+                    },
+                  toxicity: {
+                    enableToxicityDetection: preferenceData.features.toxicity.enableToxicityDetection,
+                    customMessageToxicUser: preferenceData.features.toxicity.customMessageToxicUser,
+                    modNotificationToggle: preferenceData.features.toxicity.modNotificationToggle,
+                    selfNotificationToggle: preferenceData.features.toxicity.selfNotificationToggle,
+                    modMessage: preferenceData.features.toxicity.modMessage,
+                    selfMessage: preferenceData.features.toxicity.selfMessage,
+                    toxicityThreshold: preferenceData.features.toxicity.toxicityThreshold,
+                    showTopScorersToggle: preferenceData.features.toxicity.showTopScorersToggle,
+                    showBottomScorersToggle: preferenceData.features.toxicity.showBottomScorersToggle,
+                    leaderboardToggle: preferenceData.features.toxicity.leaderboardToggle,
+                    showTopScorers: preferenceData.features.toxicity.showTopScorers,
+                    showBottomScorers: preferenceData.features.toxicity.showBottomScorers,
+                    leaderboardDuration: preferenceData.features.toxicity.leaderboardDuration
+                    },
+                  darkMode: {
                 }
                 }
                 };
