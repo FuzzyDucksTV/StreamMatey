@@ -67,10 +67,8 @@ chrome.storage.sync.get('twitchAccessToken', function(data) {
 // Handle the login and logout of the user
 chrome.runtime.onMessage.addListener(async function(request, sender, sendResponse) {
     if (request.type === 'checkTwitchLogin') {
-        await checkTwitchLogin(sendResponse);
-        return true; // Needed to make the sendResponse asynchronous
-        
-      } else if (request.type === 'twitchLogin') {
+        return await checkTwitchLogin(sendResponse) == { loggedIn: true } ? true : false;
+    } else if (request.type === 'twitchLogin') {
         await twitchLogin(sendResponse);
         return true; // Needed to make the sendResponse asynchronous
     } else if (request.type === 'twitchLogout') {
@@ -84,12 +82,12 @@ async function twitchLogin(sendResponse) {
     // Get the client ID
     const clientId = twitchClientId;
     // Generate a random string for the state parameter
-
-    // Save the state and nonce in storage
-    await initiateTwitchOAuth(clientId);
+    // Send a message to the content script to reload the page
+    chrome.tabs.sendMessage({ type: 'reloadPage' });
     // Send a response
-    sendResponse({ loggedIn: true});
-}
+    sendResponse(await initiateTwitchOAuth(clientId, sendResponse));
+    return true;
+  }
 
 // Function to log the user out of Twitch
 function twitchLogout(sendResponse) {
@@ -121,7 +119,7 @@ export async function checkTwitchLogin(sendResponse) {
         return;
       }
       // Decrypt the access token using the encryption key
-      chrome.storage.sync.get(['encryptionKey'], function(data) {
+      chrome.storage.session.get(['encryptionKey'], function(data) {
         if (chrome.runtime.lastError) {
           console.error('Error loading encryption key:', chrome.runtime.lastError);
           sendResponse({ error: 'Error loading encryption key: ' + chrome.runtime.lastError.message, loggedIn: false });
@@ -166,7 +164,7 @@ export async function checkTwitchLogin(sendResponse) {
 
     // Function to initiate the Twitch OAuth flow
     
-export async function initiateTwitchOAuth(clientId) {
+export async function initiateTwitchOAuth(clientId, sendResponse) {
     try {
         // twitch access token using a netlify function
         const response = await fetch('https://twitch-oauth.netlify.app/.netlify/functions/twitch-oauth', {
@@ -189,9 +187,6 @@ export async function initiateTwitchOAuth(clientId) {
                 return;
             }
               storeInCookies(encryptedAccessToken);
-              
-              // Send a message to the content script to reload the page
-              chrome.tabs.sendMessage(sender.tab.id, { type: 'reloadPage' });
               // Send a response
               sendResponse({ loggedIn: true });
             });

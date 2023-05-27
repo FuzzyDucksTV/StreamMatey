@@ -1,10 +1,28 @@
 //imports
 import { analyzeToxicity } from './handleToxicityAnalysis.js';
-import { decrypt } from './handleEncryption.js';
+import { decrypt, getEncryptionKey} from './handleEncryption.js';
 import { displayError } from './errorHandling.js';
-import background from './background.js';
+import getNetlifyFunctionUrl from './handleNetlifyAPI.js';
+//Set client for tmi to use
 
-let client = background.client;
+const tmi = require('tmi.js');
+
+const client = new tmi.Client({
+    options: { debug: true },
+    connection: {
+        reconnect: true,
+        secure: true,
+        reconnectDelay: 1000,
+        reconnectAttempts: 3
+    },
+    identity: {
+        username: 'StreamMatey',
+         password: getTwitchAccessToken(),
+    },
+    channels: ['bot-commands']
+});
+
+
 function getCustomMessageMods() {
     return new Promise((resolve, reject) => {
         chrome.storage.sync.get(['customMessageMods'], function(data) {
@@ -92,48 +110,38 @@ export const monitorTwitchChat = async () => {
     let userIsLoggedIn = await checkIfUserIsLoggedIn();
     let streamIsLive = await checkIfStreamIsLive();
     let monitorStarted = false;
-    if (streamIsLive && userIsLoggedIn && (data.twitchAccessToken.length > 0 && data.encryptionKey.length > 0) && !monitorStarted) {
-        try {
-            getTheTwitchClientIDfromStorage().Promise.resolve(data.twitchAccessToken);
-            getTheEncryptedTwitchAccessTokenfromStorage().Promise.resolve(data.twitchAccessToken);
-            //check if the user is logged in
-            const encryptedAccessToken = data.twitchAccessToken;
-            const encryptionKey = data.encryptionKey;
-            if (!encryptedAccessToken || !encryptionKey) {
-            console.error('Error: Twitch access token or encryption key not found');
-            displayError('Error: Twitch access token or encryption key not found');
-            return;
-            }
-            // Decrypt the Twitch access token using the encryption key
-            const twitchAccessToken = await decrypt(encryptedAccessToken, encryptionKey);
-            // Get the current Twitch channel
+    if (streamIsLive && userIsLoggedIn && !monitorStarted) {
+        try {   
+            
+
+            const twitchAccessToken = await getTwitchAccessToken();
+            const twitchClientId = await getTheTwitchClientIDfromStorage();
+            
+            const twitchUserId = await getTwitchUserIdFromStorage();
+           
+
             const channel = await getCurrentChannel(twitchAccessToken, twitchClientId);
-            // Configure the Twitch chat client
+            // Configure the Twitch chat client connect using oauth and the current Twitch channel
             const options = {
-            options: { debug: true },
-            connection: { reconnect: true },
-    
-            identity: { username: channel, password: `oauth:${twitchAccessToken}` },
-            channels: [channel]
+                identity: {
+                    username: twitchUserId,
+                    password: twitchAccessToken
+                },
+                channels: [channel]
             };
-            let client = setClient(options);
+            client.options = options;
             // Connect to the Twitch chat
             client.connect();
             setClientOnEventHandlers(client);
             console.log('Monitor started');
             
-        } catch (error) {
-            console.error(error);
-            displayError(error);
-            return;
+        }
+        catch (error) {
+            console.error('Error monitoring Twitch chat:', error);
         }
     }
 };
 
-//set the client
-function setClient(options) {
-    return new tmi.client(options);
-}
 
 //function to set the client on event handlers
 function setClientOnEventHandlers(client) {
@@ -154,18 +162,6 @@ function setClientOnEventHandlers(client) {
 // add event listeners to monitor Twitch chat when the extension is installed or updated 
 // and the user is logged in, and stop monitoring Twitch chat when the user is logged out
 chrome.runtime.onStartup.addListener(monitorTwitchChat);
-//add event listeners for client
-client.on('connected', onConnectedHandler);
-client.on('disconnected', onDisconnectedHandler);
-client.on('cheer', onCheerHandler);
-client.on('giftpaidupgrade', onGiftPaidUpgradeHandler);
-client.on('subgift', onSubGiftHandler);
-client.on('submysterygift', onSubMysteryGiftHandler);
-client.on('subscription', onSubscriptionHandler);
-client.on('primepaidupgrade', onPrimePaidUpgradeHandler);
-client.on('rewardgift', onRewardGiftHandler);
-client.on('ritual', onRitualHandler);
-client.on('bitsbadgetier', onBitsBadgeTierHandler);
 
 //function for ondisconnectedhandler
 function onDisconnectedHandler(reason) {
@@ -350,17 +346,22 @@ async function getCurrentChannel(twitchAccessToken, twitchClientId) {
 }
 
 async function getTwitchClientId() {
+    //Get the twitch client ID from a netlify api function
     return new Promise((resolve, reject) => {
-        chrome.storage.sync.get(['twitchClientId'], function(data) {
-            if (chrome.runtime.lastError) {
-                reject(chrome.runtime.lastError);
-            }
-            const twitchClientId = data.twitchClientId;
-            if (!twitchClientId) {
-                reject(new Error('Twitch client ID not found'));
-            }
-            resolve(twitchClientId);
-        });
+        const url = getNetlifyFunctionUrl('getTwitchClientId');
+        const headers = {
+            'Content-Type': 'application/json'
+        };
+        fetch(url, { headers })
+         .then(response => response.json())
+         .then(data => {
+                if (data.error) {
+                    reject(new Error(data.message));
+                }
+                const twitchClientId = data.build_data.client_id;
+                resolve(twitchClientId);
+            })
+         .catch(error => reject(error));
     });
 }
 
@@ -374,25 +375,15 @@ async function getTwitchAccessToken() {
             if (!twitchAccessToken) {
                 reject(new Error('Twitch access token not found'));
             }
+            //Get the encryption key from chrome storage
+            const encryptionKey = getEncryptionKey();
+            decrypt(twitchAccessToken, encryptionKey);
             resolve(twitchAccessToken);
         });
     });
 }
 
-async function getEncryptionKey() {
-    return new Promise((resolve, reject) => {
-        chrome.storage.sync.get(['encryptionKey'], function(data) {
-            if (chrome.runtime.lastError) {
-                reject(chrome.runtime.lastError);
-            }
-            const encryptionKey = data.encryptionKey;
-            if (!encryptionKey) {
-                reject(new Error('Encryption key not found'));
-            }
-            resolve(encryptionKey);
-        });
-    });
-}
+
 
 async function getChannel(userId, twitchClientId) {
     return new Promise((resolve, reject) => {
@@ -634,3 +625,18 @@ export function getToxicityScoreStored(sendResponse) {
         sendResponse({score: toxicityScore});
     });
 }
+
+export async function removeTwitchAccessToken(sendResponse) {
+    // Remove the access token from storage
+    chrome.storage.sync.remove(['twitchAccessToken'], function() {
+        if (chrome.runtime.lastError) {
+            console.error('Error removing access token:', chrome.runtime.lastError);
+            sendResponse({ error: 'Error removing access token: ' + chrome.runtime.lastError.message });
+            return;
+        }
+        // Send a message to the content script to reload the page
+        chrome.tabs.sendMessage(sender.tab.id, { type: 'reloadPage' });
+        // Send a response
+        sendResponse({});
+    });
+  }

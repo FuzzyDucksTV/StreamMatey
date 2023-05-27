@@ -3,26 +3,16 @@
 
 // Imports
 
-// Variables to store the user's preferences
-let enableSentimentAnalysis = true;
-let enableToxicityDetection = true;
-let sentimentSensitivity = null;
-let toxicitySensitivity = null;
 
 // Variables to store the sentiment and toxicity scores
 let sentimentScore = null;
 let toxicityScore = null;
 
 
-// Additional options
-let sentimentOptions = {};
-let toxicityOptions = {};
-
 // Variables to store the leaderboard
 let leaderboard = [];
 
-// Variables to store the chat history
-let chatHistory = [];
+
 
 // Function to get the sentiment score from background.js
 function updateSentimentScore(request) {
@@ -53,9 +43,6 @@ async function handleMessage(request, sender, sendResponse) {
         break;
       case 'updateToxicityScore':
          updateToxicityScore(request);
-        break;
-      case 'updateChatHistory':
-        updateChatHistory(request);
         break;
       default:
           sendWarningToExtUser('Error: Unknown message type');
@@ -126,15 +113,12 @@ function updateLeaderboard(request) {
   document.getElementById('leaderboard').innerHTML = leaderboard.map(item => `<li>${item.Name}: ${item.Score}</li>`).join('');
 }
 
-//function to update the chat history
+// Function to send a message to the background script
 
-function updateChatHistory(request) {
-  chatHistory = request.ChatHistory;
-  //check if the chat history is an array
-  if (!Array.isArray(chatHistory)) {
-    //if the chat history is not an array, set the chat history to an empty array
-    chatHistory = [];
-  }
-  //update the chat history in the HTML
-  document.getElementById('chatHistory').innerHTML = chatHistory.map(item => `<li>${item}</li>`).join('');
+function sendMessage(message) {
+  chrome.runtime.sendMessage(message);
 }
+
+// Await a message from the background script
+
+chrome.runtime.onMessage.addListener(handleMessage);

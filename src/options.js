@@ -52,12 +52,12 @@ function loadPreferences() {
             console.error('Error loading preferences:', response.error);
             displayError('Error loading preferences: ' + response.error);
         }
-        const decryptedPreferences = response.preferences;
+        const preferences = response.preferences;
         if (preferences)
         {
             console.log("Preferences loaded");
             // Set the preferences on the options page
-            if (decryptedPreferences.darkMode) {
+            if (preferences.darkMode) {
                 document.body.classList.add('dark');
                 themeToggle.checked = true;
             } else {
@@ -65,21 +65,21 @@ function loadPreferences() {
                 themeToggle.checked = false;
             }
 
-            for (let feature in decryptedPreferences) {
-                if (decryptedPreferences[feature].enabled) {
+            for (let feature in preferences) {
+                if (preferences[feature].enabled) {
                     features[feature].toggle.checked = true;
                 } else {
                     features[feature].toggle.checked = false;
                 }
 
-                for (let option in decryptedPreferences[feature].options) {
+                for (let option in preferences[feature].options) {
                     let input = features[feature][option];
                     if (input.type === 'checkbox') {
-                        input.checked = decryptedPreferences[feature].options[option];
+                        input.checked = preferences[feature].options[option];
                     } else if (input.type === 'range') {
-                        input.value = decryptedPreferences[feature].options[option];
+                        input.value = preferences[feature].options[option];
                     } else {
-                        input.value = decryptedPreferences[feature].options[option];
+                        input.value = preferences[feature].options[option];
                     }
                 }
             }
@@ -117,7 +117,7 @@ loadPreferences();
         // Encrypt the preferences using the encryption key
         const unencryptedPreferences = preferences;
 
-        // Send the encrypted preferences to the background script to save
+        // Send the unencrypted preferences to the background script to save
         chrome.runtime.sendMessage({type: 'savePreferences', preferences: unencryptedPreferences}, function(response) {
             if (response.error) {
                 console.error('Error saving preferences:', response.error);
@@ -140,7 +140,16 @@ loadPreferences();
 
     twitchLoginButton.addEventListener('click', () => {
         // Initiate OAuth flow with Twitch via Netlify function
-        chrome.runtime.sendMessage({type: 'initiateTwitchOAuth'});
+        chrome.runtime.sendMessage({type: 'initiateTwitchOAuth', clientId: '1' }, function(response) {
+            if (response.error) {
+                console.error('Error initiating Twitch OAuth:', response.error);
+                displayError('Error initiating Twitch OAuth: ');
+                return;
+                
+            } else {
+                console.log('Twitch OAuth initiated successfully')
+            }
+        });
     });
 
     for (let feature in features) {
@@ -192,10 +201,7 @@ loadPreferences();
         } else if (request.type === 'preferences') {
             const preferences = request.preferences;
             if (preferences) {
-                // Decrypt the preferences using the encryption key
-                const decryptedPreferences = preferences;
-
-                if (decryptedPreferences.darkMode) {
+                if (preferences.darkMode) {
                     document.body.classList.add('dark');
                     themeToggle.checked = true;
                 } else {
@@ -203,21 +209,21 @@ loadPreferences();
                     themeToggle.checked = false;
                 }
 
-                for (let feature in decryptedPreferences) {
-                    if (decryptedPreferences[feature].enabled) {
+                for (let feature in preferences) {
+                    if (preferences[feature].enabled) {
                         features[feature].toggle.checked = true;
                     } else {
                         features[feature].toggle.checked = false;
                     }
 
-                    for (let option in decryptedPreferences[feature].options) {
+                    for (let option in preferences[feature].options) {
                         let input = features[feature][option];
                         if (input.type === 'checkbox') {
-                            input.checked = decryptedPreferences[feature].options[option];
+                            input.checked = preferences[feature].options[option];
                         } else if (input.type === 'range') {
-                            input.value = decryptedPreferences[feature].options[option];
+                            input.value = preferences[feature].options[option];
                         } else {
-                            input.value = decryptedPreferences[feature].options[option];
+                            input.value = preferences[feature].options[option];
                         }
                     }
                 }

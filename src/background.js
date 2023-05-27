@@ -5,9 +5,9 @@ const jQuery = require('jquery');
 const $ = jQuery;
 
 // Global variables
-let client;
+export let client;
 let preferences;
-let encryptionKey;
+
 
 // Perspective API variables
 const perspectiveApiUrl = 'https://commentanalyzer.googleapis.com/v1alpha1/comments:analyze?key=';
@@ -19,7 +19,6 @@ const netlifyFunctionUrl = 'https://myfunction.netlify.app/.netlify/functions/tw
 //imports
 
 import { getPreferences, savePreferences, setDefaultPreferences } from './handlePreferences.js';
-import { getEncryptionKey } from './handleEncryption.js';
 import { monitorTwitchChat } from './handleTwitchChatMessages.js';
 import { handleStorageChanges } from './handleChromeStorageChanges.js';
 import { handleMessages } from './handleBackgroundMessages.js';
@@ -30,7 +29,6 @@ import { handleMessages } from './handleBackgroundMessages.js';
 async function init() {
     // Get the user's preferences
     preferences = getPreferences();
-    encryptionKey = getEncryptionKey();
 
     }
 

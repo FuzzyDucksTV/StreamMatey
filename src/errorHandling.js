@@ -17,7 +17,7 @@ export function displayError(message) {
   }
 
     // Function to handle errors
-    function handleError(error) {
+    export function handleError(error) {
         // Handle errors in some way, e.g.:
         displayError(error.message);
     }

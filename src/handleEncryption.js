@@ -1,6 +1,6 @@
 //imports
 import { displayError } from './errorHandling.js';
-
+import getNetlifyFunctionUrl from './handleNetlifyAPI.js';
 // Variables for encryption
 let encryptionKey = null;
 
@@ -21,10 +21,7 @@ export function checkEncryptionKeyExists() {
   function loadEncryptionKey() {
     chrome.storage.sync.get(['encryptionKey'], data => {
       if (data.encryptionKey) {
-        // Convert the encryption key to a usable format
-        window.crypto.subtle.importKey('jwk', data.encryptionKey, { name: 'AES-GCM' }, true, ['encrypt', 'decrypt'])
-          .then(key => encryptionKey = key)
-          .catch(err => displayError('Error loading encryption key: ' + err.message));
+        encryptionKey = data.encryptionKey;
       } else {
         displayError('Error: Encryption key not found');
       }
@@ -35,92 +32,112 @@ export function checkEncryptionKeyExists() {
     return encrypt(accessToken, encryptionKey);
   }
 
-  // Function to generate a new encryption key
-  function generateNewEncryptionKey() {
-    window.crypto.subtle.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"])
-      .then(key => window.crypto.subtle.exportKey('jwk', key)) // Convert key to a storable format
-      .then(keyData => {
-          // Save the key data to Chrome's sync storage
-          chrome.storage.sync.set({ encryptionKey: keyData }, () => {
-            if (chrome.runtime.lastError) {
-              displayError('Error saving encryption key: ' + chrome.runtime.lastError.message);
-            } else {
-              console.log('Encryption key saved successfully');
-              loadEncryptionKey(); // Load the new encryption key
-            }
-          });
-        })
-        .catch(err => displayError('Error generating encryption key: ' + err.message));
-    }
-// Function to convert ArrayBuffer to Hexadecimal
-function buf2hex(buffer) { 
-    return Array.prototype.map.call(new Uint8Array(buffer), x => ('00' + x.toString(16)).slice(-2)).join('');
-  }
-  
-  // Encryption function
-  export async function encrypt(data, jwk) {
-    // Import the JWK back to a CryptoKey
-    const key = await window.crypto.subtle.importKey('jwk', jwk, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
-  
-    let encoded = new TextEncoder().encode(JSON.stringify(data));
-    let iv = window.crypto.getRandomValues(new Uint8Array(12));
-  
-    try {
-        const encrypted = await window.crypto.subtle.encrypt(
-            {
-                name: "AES-GCM",
-                iv: iv,
-            },
-            key,
-            encoded
-        );
-       // Convert to Base64 and prepend IV for storage
-       let encryptedStr = btoa(unescape(encodeURIComponent(String.fromCharCode.apply(null, new Uint8Array(encrypted)))));
-       return btoa(unescape(encodeURIComponent(String.fromCharCode.apply(null, iv)))) + ',' + encryptedStr;
-    } catch (err) {
-        console.error(err);
-        displayError('Error encrypting data: ' + err.message);
-        throw err; // Propagate the error
-    }
-  }
-  
-  export async function decrypt(data, jwk) {
-    // Import the JWK back to a CryptoKey
-    const key = await window.crypto.subtle.importKey('jwk', jwk, { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
-  
-    let parts = data.split(',');
-    let iv = new Uint8Array(decodeURIComponent(escape(atob(parts[0]))).split('').map(c => c.charCodeAt(0)));
-    let encrypted = new Uint8Array(decodeURIComponent(escape(atob(parts[1]))).split('').map(c => c.charCodeAt(0)));
-  
-    try {
-        const decrypted = await window.crypto.subtle.decrypt(
-            {
-                name: "AES-GCM",
-                iv: iv,
-            },
-            key,
-            encrypted
-        );
-        return JSON.parse(new TextDecoder().decode(decrypted));
-    } catch (err) {
-        console.error(err);
-        displayError('Error decrypting data: ' + err.message);
-        throw err; // Propagate the error
-    }
-  }
+  import forge from 'node-forge';
+import { Buffer } from 'buffer';
 
-  // Function to get the encryption key
-  export function getEncryptionKey() {
-    //get the encryption key from chrome's storage
-    chrome.storage.sync.get(['encryptionKey'], data => {
-      if (data.encryptionKey) {
-        return data.encryptionKey;
-      } else {
-        generateNewEncryptionKey(); // Generate a new encryption key if it doesn't exist
-        
-        return data.encryptionKey;
-      }
-    });
+// Function to convert a string to a hexadecimal
+function stringToHex(str) {
+  let hex = '';
+  for(let i = 0; i < str.length; i++) {
+    hex += str.charCodeAt(i).toString(16);
   }
+  return hex;
+}
+
+// Function to convert hexadecimal to a string
+function hexToString(hex) {
+  let str = '';
+  for (let i = 0; i < hex.length; i += 2) {
+    str += String.fromCharCode(parseInt(hex.substr(i, 2), 16));
+  }
+  return str;
+}
+
+// Encryption function
+export function encrypt(data, keyIV) {
+  // Split the keyIV string into the key and IV
+  let rawKeyIV = Buffer.from(keyIV, 'base64');
+  let key = rawKeyIV.slice(0, 16);
+  let iv = rawKeyIV.slice(16);
+
+  // Convert key and iv into a format usable by Forge
+  key = forge.util.createBuffer(key.toString(), 'raw');
+  iv = forge.util.createBuffer(iv.toString(), 'raw');
+
+  let cipher = forge.cipher.createCipher('AES-GCM', key);
+  cipher.start({ iv: iv });
+  cipher.update(forge.util.createBuffer(JSON.stringify(data), 'utf8'));
+  cipher.finish();
+  let encrypted = cipher.output;
+  let tag = cipher.mode.tag;
+
+  // Convert to hex and return as an object
+  return {
+    data: stringToHex(encrypted.getBytes()),
+    iv: stringToHex(iv.getBytes()),
+    tag: stringToHex(tag.getBytes())
+  };
+}
+
+// Decryption function
+export function decrypt(encrypted, keyIV) {
+  // Split the keyIV string into the key and IV
+  let rawKeyIV = Buffer.from(keyIV, 'base64');
+  let key = rawKeyIV.slice(0, 16);
+  let iv = rawKeyIV.slice(16);
+
+  // Convert key and iv into a format usable by Forge
+  key = forge.util.createBuffer(key.toString(), 'raw');
+  iv = forge.util.createBuffer(iv.toString(), 'raw');
+
+  let decipher = forge.cipher.createDecipher('AES-GCM', key);
+  decipher.start({
+    iv: iv,
+    tag: hexToString(encrypted.tag)
+  });
+  decipher.update(forge.util.createBuffer(hexToString(encrypted.data), 'raw'));
+  decipher.finish();
+
+  return JSON.parse(decipher.output.toString('utf8'));
+}
+
+// Generate a new encryption key and store it
+function generateNewEncryptionKey() {
+  let key = forge.random.getBytesSync(16);
+  let iv = forge.random.getBytesSync(16);
+  let keyIV = Buffer.from(key + iv).toString('base64');
+
+  // Save the key data to Chrome's sync storage
+  chrome.storage.sync.set({ encryptionKey: keyIV }, () => {
+    if (chrome.runtime.lastError) {
+      console.error('Error saving encryption key: ' + chrome.runtime.lastError.message);
+    } else {
+      console.log('Encryption key saved successfully');
+      // Load the new encryption key
+      chrome.storage.sync.get(['encryptionKey'], result => {
+        console.log('Encryption key loaded: ' + result.encryptionKey);
+      });
+    }
+  });
+}
+async function getEncryptionKey() {
+  //Get encryption key from Netlify api function
+  return new Promise((resolve, reject) => {
+      const url = getNetlifyFunctionUrl('getEncryptionKey');
+      const headers = {
+          'Content-Type': 'application/json'
+      };
+      fetch(url, { headers })
+        .then(response => response.json())
+        .then(data => {
+              if (data.error) {
+                  reject(new Error(data.message));
+              }
+              const encryptionKey = data.build_data.secret;
+              resolve(encryptionKey);
+          })
+        .catch(error => reject(error));
+  });
+}
 
 
