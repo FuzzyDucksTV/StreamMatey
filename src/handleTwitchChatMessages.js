@@ -78,9 +78,9 @@ function checkIfUserIsLoggedIn() {
     return new Promise((resolve, reject) => {
         chrome.storage.sync.get(['twitchAccessToken'], function(data) {
             if (chrome.runtime.lastError) {
-                reject(chrome.runtime.lastError);
+                reject(false);
             } else {
-                if (data.twitchAccessToken.length > 0) {
+                if (data.twitchAccessToken) {
                 resolve(true);
             }
         }
