@@ -18,12 +18,6 @@ document.addEventListener('DOMContentLoaded', (event) => {
             modMessage: document.getElementById('toxicityModMessage'),
             selfMessage: document.getElementById('toxicitySelfMessage'),
             toxicityThreshold: document.getElementById('toxicitySensitivity'),
-            showTopScorersToggle: document.getElementById('showTopScorersToggle'),
-            showBottomScorersToggle: document.getElementById('showBottomScorersToggle'),
-            leaderboardToggle: document.getElementById('leaderboardToggle'),
-            showTopScorers: document.getElementById('showTopScorers'),
-            showBottomScorers: document.getElementById('showBottomScorers'),
-            leaderboardDuration: document.getElementById('leaderboardDuration')
         },
         darkMode: {
             darkMode: document.getElementById('darkModeToggle')
@@ -45,41 +39,52 @@ document.addEventListener('DOMContentLoaded', (event) => {
         , 5000);
     }
 
-    const loadPreferences = () => {
-        //Send a message to the background script to load the preferences
-        chrome.runtime.sendMessage({type: 'loadPreferences'}, function(response) {
-          let preferences = response.preferences;
-          if (preferences) {
-            console.log("Preferences loaded");
-            // Set the preferences on the options page
-            if (preferences.darkMode) {
-              document.body.classList.add('dark');
-              themeToggle.checked = true;
-            } else {
-              document.body.classList.remove('dark');
-              themeToggle.checked = false;
-            }
-            for (let feature in preferences) {
-              if (preferences[feature].enabled) {
-                features[feature].toggle.checked = true;
-              } else {
-                features[feature].toggle.checked = false;
-              }
-              for (let option in preferences[feature].options) {
-                let input = features[feature][option];
-                if (input.type === 'checkbox') {
-                  input.checked = preferences[feature].options[option];
-                } else if (input.type === 'range') {
-                  input.value = preferences[feature].options[option];
+    // Function to load preferences
+
+    async function loadPreferences() {
+        //Send a message to the background script to load the preferences. The background script will send a response with the preferences
+        chrome.runtime.sendMessage({ type: 'loadPreferences' }, function (response) {
+            if (response.error) {
+                console.error('Error loading preferences:', response.error);
+                displayError('Error loading preferences: ' + response.error);
+            } else if (response.preferences) {
+                // Preferences loaded successfully
+                console.log('Preferences loaded successfully');
+                // Set the preferences
+                const preferences = response.preferences;
+                if (preferences.darkMode) {
+                    document.body.classList.add('dark');
+                    themeToggle.checked = true;
                 } else {
-                  input.value = preferences[feature].options[option];
+                    document.body.classList.remove('dark');
+                    themeToggle.checked = false;
                 }
-              }
+
+                for (let feature in preferences) {
+                    if (preferences[feature].enabled) {
+                        features[feature].toggle.checked = true;
+                    } else {
+                        features[feature].toggle.checked = false;
+                    }
+
+                    for (let option in preferences[feature].options) {
+                        let input = features[feature][option];
+                        if (input.type === 'checkbox') {
+                            input.checked = preferences[feature].options[option];
+                        } else if (input.type === 'range') {
+                            input.value = preferences[feature].options[option];
+                        } else {
+                            input.value = preferences[feature].options[option];
+                        }
+                    }    
+        
+
             }
             } else {
-                console.error('Error loading preferences');
-                displayError('Error loading preferences');
-            }
+                console.log("No preferences saved");
+                // No preferences saved, so set the default preferences
+                setDefaultPreferences();
+                }
         });
     };
 

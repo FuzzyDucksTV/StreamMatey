@@ -47,12 +47,6 @@
               modMessage: "This message from {user} may be toxic.",
               selfMessage: "This message from {user} may be toxic.",
               toxicityThreshold: 0.5,
-              showTopScorersToggle: true,
-              showBottomScorersToggle: true,
-              leaderboardToggle: true,
-              showTopScorers: 3,
-              showBottomScorers: 3,
-              leaderboardDuration: 7
           },
           darkMode: {
               enableDarkMode: false,
@@ -96,12 +90,6 @@ export async function savePreferences(preferenceData, sendResponse) {
         modMessage: preferenceData.features.toxicity.modMessage,
         selfMessage: preferenceData.features.toxicity.selfMessage,
         toxicityThreshold: preferenceData.features.toxicity.toxicityThreshold,
-        showTopScorersToggle: preferenceData.features.toxicity.showTopScorersToggle,
-        showBottomScorersToggle: preferenceData.features.toxicity.showBottomScorersToggle,
-        leaderboardToggle: preferenceData.features.toxicity.leaderboardToggle,
-        showTopScorers: preferenceData.features.toxicity.showTopScorers,
-        showBottomScorers: preferenceData.features.toxicity.showBottomScorers,
-        leaderboardDuration: preferenceData.features.toxicity.leaderboardDuration
         },
       darkMode: {
         enableDarkMode: preferenceData.features.darkMode.enableDarkMode
