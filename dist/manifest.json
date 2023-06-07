@@ -18,16 +18,11 @@
     "identity",
     "notifications",
     "tabs",
-    "activeTab",
-    "https://api.twitch.tv/*",
-    "https://api.netlify.com/*",
-    "https://accounts.google.com/o/oauth2/auth",
-    "https://id.twitch.tv/oauth2/authorize"
-
+    "activeTab"
   ],
   "host_permissions": [
-    "https://api.twitch.tv/*",
-    "https://api.netlify.com/*",
+    "https://*.twitch.tv/*",
+    "https://*.netlify.com/*",
     "https://accounts.google.com/o/oauth2/auth",
     "https://id.twitch.tv/oauth2/authorize"
   ],
@@ -36,8 +31,8 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["options.html", "options.js", "sentiment.html", "contentScript.js", "dark.css", "light.css", "sentiment.css"],
-      "matches": ["<all_urls>"],
+      "resources": [ "options.html", "options.js", "sentiment.html", "contentScript.js", "dark.css", "light.css", "sentiment.css" ],
+      "matches": [ "<all_urls>" ],
       "use_dynamic_url": false
     }
   ],
@@ -66,14 +61,14 @@
       "profile"
     ],
     "redirect_uris": [
-      "https://id.twitch.tv/oauth2/authorize",
-      "https://accounts.google.com/o/oauth2/auth"
+      "id.twitch.tv/oauth2/authorize",
+      "accounts.google.com/o/oauth2/auth"
     ]
   },
   "content_scripts": [
     {
-      "matches": ["<all_urls>"],
-      "js": ["contentScript.js","options.js"]
+      "matches": [ "<all_urls>" ],
+      "js": [ "contentScript.js", "options.js" ]
     }
   ]
 }
